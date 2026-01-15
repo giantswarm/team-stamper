@@ -15,13 +15,13 @@ workflows:
             tags:
               only: /^v.*/
       - architect/push-to-registries:
-        context: architect
-        name: push-to-registries
-        requires:
-        - go-build
-        filters:
-          tags:
-            only: /^v.*/
-          branches:
-            ignore:
-            - main
+          context: architect
+          name: push-to-registries
+          requires:
+            - go-build
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore:
+                - main

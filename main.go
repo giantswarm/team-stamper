@@ -54,7 +54,6 @@ func main() {
 	var enableLeaderElection bool
 	var probeAddr string
 	var enableHTTP2 bool
-	var tlsOpts []func(*tls.Config)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to e.g. :8080. "+
 		"Leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -80,10 +79,6 @@ func main() {
 	disableHTTP2 := func(c *tls.Config) {
 		setupLog.Info("disabling http/2")
 		c.NextProtos = []string{"http/1.1"}
-	}
-
-	if !enableHTTP2 {
-		tlsOpts = append(tlsOpts, disableHTTP2)
 	}
 
 	// Metrics endpoint is enabled in 'config/default/kustomization.yaml'. The Metrics options configure the server.

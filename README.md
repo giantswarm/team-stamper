@@ -1,5 +1,6 @@
 # General Go template repository
 
+test 
 This is a general template repository containing some basic files every GitHub repo owned by Giant Swarm should have.
 
 Note also these more specific repositories:

@@ -1,0 +1,10 @@
+apiVersion: v2
+name: team-stamper
+description: A Helm chart for Kubernetes Team Stamper operator
+icon: https://s.giantswarm.io/app-icons/giantswarm/1/dark.svg
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+annotations:
+  io.giantswarm.application.restrictions.cluster-singleton: 'true'
+  io.giantswarm.application.team: honeybadger

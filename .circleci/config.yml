@@ -9,21 +9,36 @@ workflows:
       - architect/go-build:
           context: architect
           name: go-build
-          binary: template
+          binary: team-stamper
           filters:
             # Trigger job also on git tag.
             tags:
               only: /^v.*/
-      # - architect/push-to-registries:
-      #     context: architect
-      #     name: push-to-registries
-      #     requires:
-      #       - go-build
-      #     filters:
-      #       # Trigger job also on git tag.
-      #       tags:
-      #         only: /^v.*/
-      #       branches:
-      #         ignore:
-      #           - main
-      #           - master
+      - architect/push-to-registries:
+          context: architect
+          name: push-to-registries
+          requires:
+            - go-build
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore:
+                - main
+
+      - architect/push-to-app-catalog:
+          context: architect
+          executor: app-build-suite
+          name: push-to-app-catalog
+          app_catalog: control-plane-catalog
+          app_catalog_test: control-plane-test-catalog
+          chart: team-stamper
+          persist_chart_archive: true
+          requires:
+            - push-to-registries
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore:
+              - main

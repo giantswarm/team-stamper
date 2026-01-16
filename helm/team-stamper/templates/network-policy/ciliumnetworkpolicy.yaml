@@ -1,0 +1,22 @@
+{{- if or (.Capabilities.APIVersions.Has "cilium.io/v2/CiliumNetworkPolicy") (eq .Values.cilium.enforce true) }}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  labels:
+    {{- include "labels.common" . | nindent 4 }}
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  egress:
+    - toEntities:
+        - kube-apiserver
+        - cluster
+  endpointSelector:
+    matchLabels:
+      {{- include "labels.selector" . | nindent 6 }}
+  ingress:
+    - fromEntities:
+        - kube-apiserver
+        - cluster
+{{- end }}

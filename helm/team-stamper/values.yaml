@@ -1,0 +1,45 @@
+image:
+  registry: gsoci.azurecr.io
+  repository: "giantswarm/team-stamper"
+  pullPolicy: IfNotPresent
+  tag: ""
+
+securityContext:
+  pod:
+    runAsNonRoot: true
+    runAsUser: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  container:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop:
+        - ALL
+
+cilium:
+  enforce: false
+
+metrics:
+  port: 8080
+  podMonitor:
+    enabled: true
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 32Mi
+  requests:
+    cpu: 50m
+    memory: 16Mi
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: health
+readinessProbe:
+  httpGet:
+    path: /
+    port: health

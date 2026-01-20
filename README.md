@@ -2,6 +2,6 @@
 
 # Team Stamper Controller
 
-This controller is in charge of adding the `application.giantswarm.io/team` label to each HelmRelease CR, providing information of apps  ownership.
+This controller is in charge of adding the `application.giantswarm.io/team` annotation to each HelmRelease CR, providing information of apps  ownership.
 
-Values of this label are then translated by the Kube State Metrics into emitted metrics labels, which is then used for routing app-related alerts to the appropriate teams.
+Values of this annotation are then translated by the Kube State Metrics into emitted metrics labels, which is then used for routing app-related alerts to the appropriate teams.

@@ -31,6 +31,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/giantswarm/team-stamper/internal/controller"
 	// +kubebuilder:scaffold:imports
@@ -83,6 +87,7 @@ func main() {
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "52448afe.application.giantswarm.io",
+
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
@@ -93,7 +98,28 @@ func main() {
 		// the manager stops, so would be fine to enable this option. However,
 		// if you are doing or is intended to do any operation such as perform cleanups
 		// after the manager stops then its usage might be unsafe.
+
 		// LeaderElectionReleaseOnCancel: true,
+
+		// When we tell manager to watch certain GVKs, or when controller do GETs with
+		// a caching client for example, the manager starts caching. It does it by running
+		// informers to cache objects of a given GVKs. For HelmRelease CRs and
+		// OCIRepositories that's ok, for we want all of them, mostly, but we only want
+		// a single teams mapping ConfigMap, hence it makes sense to reduce what ConfigMaps
+		// are cached here to only a single namespace and selector.
+		Cache: cache.Options{
+			ByObject: map[client.Object]cache.ByObject{
+				&v1.ConfigMap{}: {
+					Namespaces: map[string]cache.Config{
+						"default": cache.Config{
+							LabelSelector: 	labels.SelectorFromSet(map[string]string{
+								"application.giantswarm.io/teams-mapping": "true",
+	        				}),
+						},
+					},
+				},
+			},
+		},
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

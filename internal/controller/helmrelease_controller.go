@@ -18,17 +18,17 @@ package controller
 
 import (
 	"context"
-	"strings"
 	"fmt"
+	"strings"
 
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"k8s.io/apimachinery/pkg/types"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
 	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
@@ -36,10 +36,10 @@ import (
 )
 
 const (
-	mappingsCmName 			= "apps-to-teams-mapping"
-	mappingsCmNamespace 	= "default"
-	noteam 					= "noteam"
-	gsociPrefix 			= "oci://gsoci.azurecr.io"
+	mappingsCmName      = "apps-to-teams-mapping"
+	mappingsCmNamespace = "default"
+	noteam              = "noteam"
+	gsociPrefix         = "oci://gsoci.azurecr.io"
 )
 
 // HelmReleaseReconciler reconciles a HelmRelease object
@@ -104,7 +104,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	ociRepoName := types.NamespacedName{
-		Name: cr.Spec.ChartRef.Name,
+		Name:      cr.Spec.ChartRef.Name,
 		Namespace: cr.GetNamespace(),
 	}
 
@@ -144,7 +144,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, nil
 	}
 
-	appName := string(ociRepo.Spec.URL[strings.LastIndex(ociRepo.Spec.URL,"/")+1:])
+	appName := string(ociRepo.Spec.URL[strings.LastIndex(ociRepo.Spec.URL, "/")+1:])
 
 	/*
 		Step 2: get ConfigMap with apps-to-teams mapping
@@ -156,8 +156,8 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	err := r.Get(
 		ctx,
 		types.NamespacedName{
-			Name: 		mappingsCmName,
-			Namespace: 	mappingsCmNamespace,
+			Name:      mappingsCmName,
+			Namespace: mappingsCmNamespace,
 		},
 		mappingCm,
 	)
@@ -194,15 +194,15 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	patch := &helmv2.HelmRelease{
 		TypeMeta: metav1.TypeMeta{
-            APIVersion: helmv2.GroupVersion.String(),
+			APIVersion: helmv2.GroupVersion.String(),
 			Kind:       helmv2.HelmReleaseKind,
-        },
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				gsannotation.AppTeam: assignedTeam,
 			},
-			Name:		cr.Name,
-			Namespace:	cr.Namespace,
+			Name:      cr.Name,
+			Namespace: cr.Namespace,
 		},
 	}
 
@@ -218,7 +218,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *HelmReleaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	
+
 	// TODO: can we somehow assign HR CRs to a team mapping ConfigMap and wake
 	//       reconciliation up for them when the mapping changes?
 

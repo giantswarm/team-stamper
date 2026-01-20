@@ -23,14 +23,14 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"k8s.io/apimachinery/pkg/runtime"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
 	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
@@ -38,8 +38,8 @@ import (
 
 var teamMappingsCm = v1.ConfigMap{
 	ObjectMeta: metav1.ObjectMeta{
-		Name: "apps-to-teams-mapping",
-		Namespace: "default",
+		Name:      mappingsCmName,
+		Namespace: mappingsCmNamespace,
 	},
 	Data: map[string]string{
 		"app-a": "team-a",
@@ -69,20 +69,20 @@ var _ = Describe("HelmRelease Controller", func() {
 				objs,
 				&helmv2.HelmRelease{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-app-a",
+						Name:      "test-app-a",
 						Namespace: "org-test",
 					},
 					Spec: helmv2.HelmReleaseSpec{
 						ChartRef: &helmv2.CrossNamespaceSourceReference{
-							Kind: "OCIRepository",
-							Name: "test-app-a",
+							Kind:      "OCIRepository",
+							Name:      "test-app-a",
 							Namespace: "org-test",
 						},
 					},
 				},
 				&sourcev1beta2.OCIRepository{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-app-a",
+						Name:      "test-app-a",
 						Namespace: "org-test",
 					},
 					Spec: sourcev1beta2.OCIRepositorySpec{
@@ -103,20 +103,18 @@ var _ = Describe("HelmRelease Controller", func() {
 
 			req := reconcile.Request{
 				types.NamespacedName{
-					Name: "test-app-a",
+					Name:      "test-app-a",
 					Namespace: "org-test",
 				},
 			}
 
 			_, _ = rc.Reconcile(ctx, req)
 
-
-
 			hrcr := helmv2.HelmRelease{}
 			_ = client.Get(
 				ctx,
 				types.NamespacedName{
-					Name: "test-app-a",
+					Name:      "test-app-a",
 					Namespace: "org-test",
 				},
 				&hrcr,

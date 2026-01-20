@@ -24,17 +24,17 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/giantswarm/team-stamper/internal/controller"
 	// +kubebuilder:scaffold:imports
@@ -112,9 +112,9 @@ func main() {
 				&v1.ConfigMap{}: {
 					Namespaces: map[string]cache.Config{
 						"default": cache.Config{
-							LabelSelector: 	labels.SelectorFromSet(map[string]string{
+							LabelSelector: labels.SelectorFromSet(map[string]string{
 								"application.giantswarm.io/teams-mapping": "true",
-	        				}),
+							}),
 						},
 					},
 				},

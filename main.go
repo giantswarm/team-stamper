@@ -40,6 +40,8 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
+const controllerName = "team-stamper"
+
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -127,8 +129,9 @@ func main() {
 	}
 
 	if err := (&controller.HelmReleaseReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:         mgr.GetClient(),
+		ControllerName: controllerName,
+		Scheme:         mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "HelmRelease")
 		os.Exit(1)

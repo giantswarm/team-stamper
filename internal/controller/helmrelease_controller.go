@@ -24,6 +24,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -46,6 +47,8 @@ const (
 type HelmReleaseReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+
+	ControllerName string
 }
 
 // +kubebuilder:rbac:groups=helm.toolkit.fluxcd.io.application.giantswarm.io,resources=helmreleases,verbs=get;list;watch;create;update;patch;delete
@@ -144,7 +147,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, nil
 	}
 
-	appName := string(ociRepo.Spec.URL[strings.LastIndex(ociRepo.Spec.URL, "/")+1:])
+	appName := ociRepo.Spec.URL[strings.LastIndex(ociRepo.Spec.URL, "/")+1:]
 
 	/*
 		Step 2: get ConfigMap with apps-to-teams mapping
@@ -192,7 +195,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		Step 4: patch the HelmRelease CR with the team information
 	*/
 
-	patch := &helmv2.HelmRelease{
+	obj := &helmv2.HelmRelease{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: helmv2.GroupVersion.String(),
 			Kind:       helmv2.HelmReleaseKind,
@@ -206,7 +209,16 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		},
 	}
 
-	err = r.Patch(ctx, patch, client.Apply, client.FieldOwner("team-stamper"))
+	unObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
+	if err != nil {
+		log.Error(err, "Error converting HelmRelease to unstructured")
+
+		return ctrl.Result{}, err
+	}
+
+	applyCfg := client.ApplyConfigurationFromUnstructured(&unstructured.Unstructured{Object: unObj})
+
+	err = r.Apply(ctx, applyCfg, client.FieldOwner(r.ControllerName))
 	if err != nil {
 		log.Error(err, "Error patching HelmRelease")
 

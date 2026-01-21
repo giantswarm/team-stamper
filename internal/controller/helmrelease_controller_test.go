@@ -97,12 +97,13 @@ var _ = Describe("HelmRelease Controller", func() {
 				Build()
 
 			rc := HelmReleaseReconciler{
-				Client: client,
-				Scheme: scheme,
+				Client:         client,
+				ControllerName: "team-stamper",
+				Scheme:         scheme,
 			}
 
 			req := reconcile.Request{
-				types.NamespacedName{
+				NamespacedName: types.NamespacedName{
 					Name:      "test-app-a",
 					Namespace: "org-test",
 				},

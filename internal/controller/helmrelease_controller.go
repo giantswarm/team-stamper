@@ -257,7 +257,7 @@ func (r *HelmReleaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj client.Object) []reconcile.Request{
+func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj client.Object) []reconcile.Request {
 	log := logf.FromContext(ctx).WithValues(
 		"objectRef", map[string]string{
 			"name":      obj.GetName(),
@@ -276,7 +276,7 @@ func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj
 	log.Info("Mappings ConfigMap has changed, requesting HelmReleases reconciliation")
 
 	var hrList helmv2.HelmReleaseList
-    if err := r.List(ctx, &hrList); err != nil {
+	if err := r.List(ctx, &hrList); err != nil {
 		log.Error(err, "Error listing HelmReleases")
 
 		return nil

@@ -55,16 +55,15 @@ var _ = Describe("HelmRelease Controller", func() {
 	logger := zap.New()
 	ctx = logr.NewContext(ctx, logger)
 
+	objs := []client.Object{&teamMappingsCm}
+
+	scheme := runtime.NewScheme()
+	scheme.AddKnownTypes(v1.SchemeGroupVersion, &v1.ConfigMap{})
+	scheme.AddKnownTypes(helmv2.GroupVersion, &helmv2.HelmRelease{})
+	scheme.AddKnownTypes(sourcev1beta2.GroupVersion, &sourcev1beta2.OCIRepository{})
+
 	Context("When reconciling a HelmRelease with no annotations and available mapping", func() {
 		It("should successfully add the team annotation", func() {
-
-			objs := []client.Object{&teamMappingsCm}
-
-			scheme := runtime.NewScheme()
-			scheme.AddKnownTypes(v1.SchemeGroupVersion, &v1.ConfigMap{})
-			scheme.AddKnownTypes(helmv2.GroupVersion, &helmv2.HelmRelease{})
-			scheme.AddKnownTypes(sourcev1beta2.GroupVersion, &sourcev1beta2.OCIRepository{})
-
 			objs = append(
 				objs,
 				&helmv2.HelmRelease{

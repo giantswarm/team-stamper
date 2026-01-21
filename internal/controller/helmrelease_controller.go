@@ -86,6 +86,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		// So this logic only kicks in if object does not get removed
 		// from the storage before we get notification about its
 		// deletion, not sure this can happen.
+
 		return ctrl.Result{}, nil
 	}
 
@@ -245,9 +246,15 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	err = r.Apply(ctx, applyCfg, client.FieldOwner(r.ControllerName))
 	if err != nil {
-		log.Error(err, "Error patching HelmRelease")
+		if apierrors.IsConflict(err) {
+			log.Info("Cancelling reconciliation due to team annotation having different owner")
 
-		return ctrl.Result{}, err
+			return ctrl.Result{}, nil
+		} else {
+			log.Error(err, "Error patching HelmRelease")
+
+			return ctrl.Result{}, err
+		}
 	}
 
 	return ctrl.Result{}, nil

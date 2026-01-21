@@ -239,7 +239,7 @@ var _ = Describe("HelmRelease Controller", func() {
 
 			reqList := rc.requestsForHelmReleases(ctx, &teamMappingsCm)
 
-			Expect(len(reqList)).To(Equal(2))
+			Expect(reqList).To(HaveLen(2))
 			Expect(reqList[0]).To(Equal(reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "test-app-a",

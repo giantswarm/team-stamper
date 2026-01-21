@@ -80,7 +80,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
-	if !cr.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !cr.DeletionTimestamp.IsZero() {
 		// not sure this makes sense, we do not set finalizers on
 		// HelmRelease, for we do not need to keep them for cleaning.
 		// So this logic only kicks in if object does not get removed

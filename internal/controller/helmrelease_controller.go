@@ -29,9 +29,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
@@ -66,8 +68,6 @@ type HelmReleaseReconciler struct {
 func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 
-	// TODO: handle deletion
-
 	// Get resource under reconciliation
 	cr := &helmv2.HelmRelease{}
 	if err := r.Get(ctx, req.NamespacedName, cr); err != nil {
@@ -80,10 +80,20 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
+	if !cr.ObjectMeta.DeletionTimestamp.IsZero() {
+		// not sure this makes sense, we do not set finalizers on
+		// HelmRelease, for we do not need to keep them for cleaning.
+		// So this logic only kicks in if object does not get removed
+		// from the storage before we get notification about its
+		// deletion, not sure this can happen.
+		return ctrl.Result{}, nil
+	}
+
 	log.Info("Starting reconciliation of the HelmRelease")
 
 	defer func() {
-		// TODO: add a final touch if needed, e.g. log, cleanup, metrics, etc
+		// TODO: add a final touch if needed, e.g. log, cleanup, metrics, etc.,
+		//       if needed
 
 		log.Info("Reconciliation of the HelmRelease finished")
 	}()
@@ -145,7 +155,9 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		//       unwanted objects, so the reconciliation for them does
 		//       not even starts. Probably it is hard or impossible due
 		//       to necessity of checking up the OCIRepository CR, but
-		//       still worth checking.
+		//       still worth checking. Maybe doing this does not make
+		//       sense, for it feels like moving this checking logic
+		//       to another place, but running it anyway.
 
 		return ctrl.Result{}, nil
 	}
@@ -243,7 +255,9 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 // SetupWithManager sets up the controller with the Manager.
 func (r *HelmReleaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&helmv2.HelmRelease{}).
+		For(&helmv2.HelmRelease{}, builder.WithPredicates(
+			predicate.GenerationChangedPredicate{},
+		)).
 		Watches(
 			&v1.ConfigMap{},
 			handler.TypedEnqueueRequestsFromMapFunc(r.requestsForHelmReleases),

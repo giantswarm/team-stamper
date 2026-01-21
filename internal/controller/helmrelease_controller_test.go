@@ -55,17 +55,15 @@ var _ = Describe("HelmRelease Controller", func() {
 	logger := zap.New()
 	ctx = logr.NewContext(ctx, logger)
 
-	objs := []client.Object{&teamMappingsCm}
-
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(v1.SchemeGroupVersion, &v1.ConfigMap{})
-	scheme.AddKnownTypes(helmv2.GroupVersion, &helmv2.HelmRelease{})
+	scheme.AddKnownTypes(helmv2.GroupVersion, &helmv2.HelmRelease{}, &helmv2.HelmReleaseList{})
 	scheme.AddKnownTypes(sourcev1beta2.GroupVersion, &sourcev1beta2.OCIRepository{})
 
 	Context("When reconciling a HelmRelease with no annotations and available mapping", func() {
 		It("should successfully add the team annotation", func() {
-			objs = append(
-				objs,
+			objs := []client.Object{
+				&teamMappingsCm,
 				&helmv2.HelmRelease{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-app-a",
@@ -88,7 +86,7 @@ var _ = Describe("HelmRelease Controller", func() {
 						URL: "oci://gsoci.azurecr.io/charts/giantswarm/app-a",
 					},
 				},
-			)
+			}
 
 			client := fake.NewClientBuilder().
 				WithScheme(scheme).
@@ -133,8 +131,8 @@ var _ = Describe("HelmRelease Controller", func() {
 
 	Context("When reconciling a HelmRelease with no annotations and unavailable mapping", func() {
 		It("should leave HelmRelease as it is", func() {
-			objs = append(
-				objs,
+			objs := []client.Object{
+				&teamMappingsCm,
 				&helmv2.HelmRelease{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-app-d",
@@ -157,7 +155,7 @@ var _ = Describe("HelmRelease Controller", func() {
 						URL: "oci://gsoci.azurecr.io/charts/giantswarm/app-d",
 					},
 				},
-			)
+			}
 
 			client := fake.NewClientBuilder().
 				WithScheme(scheme).
@@ -193,6 +191,67 @@ var _ = Describe("HelmRelease Controller", func() {
 			_, ok := hrcr.Annotations[gsannotation.AppTeam]
 
 			Expect(ok).To(BeFalse())
+		})
+	})
+
+	Context("When running requestsForHelmReleases() for mappings ConfigMap", func() {
+		It("should return list of all HelmRelease CRs", func() {
+			objs := []client.Object{
+				&teamMappingsCm,
+				&helmv2.HelmRelease{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-app-a",
+						Namespace: "org-test-1",
+					},
+					Spec: helmv2.HelmReleaseSpec{
+						ChartRef: &helmv2.CrossNamespaceSourceReference{
+							Kind:      "OCIRepository",
+							Name:      "test-app-a",
+							Namespace: "org-test-1",
+						},
+					},
+				},
+				&helmv2.HelmRelease{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-app-b",
+						Namespace: "org-test-2",
+					},
+					Spec: helmv2.HelmReleaseSpec{
+						ChartRef: &helmv2.CrossNamespaceSourceReference{
+							Kind:      "OCIRepository",
+							Name:      "test-app-b",
+							Namespace: "org-test-2",
+						},
+					},
+				},
+			}
+
+			client := fake.NewClientBuilder().
+				WithScheme(scheme).
+				WithObjects(objs...).
+				Build()
+
+			rc := HelmReleaseReconciler{
+				Client:         client,
+				ControllerName: "team-stamper",
+				Scheme:         scheme,
+			}
+
+			reqList := rc.requestsForHelmReleases(ctx, &teamMappingsCm)
+
+			Expect(len(reqList)).To(Equal(2))
+			Expect(reqList[0]).To(Equal(reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "test-app-a",
+					Namespace: "org-test-1",
+				},
+			}))
+			Expect(reqList[1]).To(Equal(reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "test-app-b",
+					Namespace: "org-test-2",
+				},
+			}))
 		})
 	})
 })

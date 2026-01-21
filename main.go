@@ -115,7 +115,7 @@ func main() {
 					Namespaces: map[string]cache.Config{
 						"default": {
 							LabelSelector: labels.SelectorFromSet(map[string]string{
-								"application.giantswarm.io/teams-mapping": "true",
+								"application.giantswarm.io/apps-to-teams-mapping": "true",
 							}),
 						},
 					},

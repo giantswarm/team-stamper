@@ -18,10 +18,10 @@ package controller
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,6 +34,7 @@ import (
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
 	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
+	gsannotation "github.com/giantswarm/k8smetadata/pkg/annotation"
 )
 
 var teamMappingsCm = v1.ConfigMap{
@@ -109,10 +110,12 @@ var _ = Describe("HelmRelease Controller", func() {
 				},
 			}
 
-			_, _ = rc.Reconcile(ctx, req)
+			_, err := rc.Reconcile(ctx, req)
+
+			Expect(err).To(BeNil())
 
 			hrcr := helmv2.HelmRelease{}
-			_ = client.Get(
+			err = client.Get(
 				ctx,
 				types.NamespacedName{
 					Name:      "test-app-a",
@@ -121,9 +124,12 @@ var _ = Describe("HelmRelease Controller", func() {
 				&hrcr,
 			)
 
-			fmt.Println(hrcr)
-			// TODO: check HR CR has the annotation, but do it with
-			//       this testing framework
+			Expect(err).To(BeNil())
+
+			team, ok := hrcr.Annotations[gsannotation.AppTeam]
+
+			Expect(ok).To(Equal(true))
+			Expect(team).To(Equal("team-a"))
 		})
 	})
 })

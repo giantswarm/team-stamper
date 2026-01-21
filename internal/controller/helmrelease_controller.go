@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,6 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
@@ -57,15 +60,13 @@ type HelmReleaseReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the HelmRelease object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.22.4/pkg/reconcile
 func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
+
+	// TODO: handle deletion
 
 	// Get resource under reconciliation
 	cr := &helmv2.HelmRelease{}
@@ -83,6 +84,8 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	defer func() {
 		// TODO: add a final touch if needed, e.g. log, cleanup, metrics, etc
+
+		log.Info("Reconciliation of the HelmRelease finished")
 	}()
 
 	/*
@@ -126,7 +129,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			),
 		)
 
-		// this restarts the reconciliation with exponential backoff.
+		// TODO: this restarts the reconciliation with exponential backoff.
 		// We could maybe distinguish between not-found and other errors,
 		// and use the RequeueAfter for the former and exponential backoff
 		// for the latter.
@@ -134,9 +137,9 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if !strings.HasPrefix(ociRepo.Spec.URL, gsociPrefix) {
-		// cancel reconciliation for the object unless resync kick in or
-		// objects gets updated, there is no point it checking it sooner,
-		// for app does not come from GS registry.
+		// cancel reconciliation for the object unless resync kicks in or
+		// object changes, there is no point it checking it sooner, for
+		// app does not come from GS registry.
 		//
 		// TODO: check if we could create a predicate for filtering out
 		//       unwanted objects, so the reconciliation for them does
@@ -153,8 +156,6 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		Step 2: get ConfigMap with apps-to-teams mapping
 	*/
 
-	assignedTeam := noteam
-
 	mappingCm := &v1.ConfigMap{}
 	err := r.Get(
 		ctx,
@@ -167,17 +168,21 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info(fmt.Sprintf("ConfigMap %s/%s not found, assigning 'noteam'", mappingsCmName, mappingsCmNamespace))
+
+			// cancel reconciliation of the object. No mapping may mean it hasn't
+			// been created yet, in which case we could maybe temporarily use
+			// `noteam`, but it may also mean it previously was available, but is
+			// only now gone, due to accidental deletion or migration for example,
+			// in which case we cannot use `noteam` safely for it may replace
+			// existing information. We could also check for existing information,
+			// but this complicates the logic, where it is better to leave the
+			// object as it is.
+			return ctrl.Result{}, nil
 		} else {
 			log.Error(err, fmt.Sprintf("Error fetching %s/%s ConfigMap", mappingsCmName, mappingsCmNamespace))
 
-			// TODO: determine what is the correct behaviour here. If the mapping was
-			//       previously present, but now the map is gone, due to for example
-			//       accidental deletion, what the controller has no means to know about
-			//       should we only cancel on err ∧ ¬ isNotFound(err) or generally on
-			//       error?
-			//
-			//       It feels rather safe to not do anything when the mappingis not found.
-			//       Something to consider.
+			// mapping exists but there was a problem fetching it, reschedule
+			// reconciliation with a backoff.
 			return ctrl.Result{}, err
 		}
 	}
@@ -186,9 +191,16 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		Step 3: get the team assignment from mapping, if present
 	*/
 
-	// TODO: this error checking feels like another reason to just skip on non-existing mapping.
-	if team, ok := mappingCm.Data[appName]; err == nil && ok {
-		assignedTeam = team
+	assignedTeam, ok := mappingCm.Data[appName]
+
+	if !ok {
+		// the mapping CM is available but not team has been
+		// found for the app. By the rule all GS apps should
+		// have teams, hence most likely the mapping CM hasn't
+		// been updated yet. It makes sense to reschedule
+		// reconciliation after a time to check again.
+
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
 	}
 
 	/*
@@ -236,7 +248,52 @@ func (r *HelmReleaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		// Uncomment the following line adding a pointer to an instance of the controlled resource as an argument
-		// For().
+		For(&helmv2.HelmRelease{}).
+		Watches(
+			&v1.ConfigMap{},
+			handler.TypedEnqueueRequestsFromMapFunc(r.requestsForHelmReleases),
+		).
 		Named("helmrelease").
 		Complete(r)
+}
+
+func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj client.Object) []reconcile.Request{
+	log := logf.FromContext(ctx).WithValues(
+		"objectRef", map[string]string{
+			"name":      obj.GetName(),
+			"namespace": obj.GetNamespace(),
+		})
+
+	cm, ok := obj.(*v1.ConfigMap)
+    if !ok {
+		return nil
+    }
+
+	if cm.Name != mappingsCmName || cm.Namespace != mappingsCmNamespace {
+        return nil
+    }
+
+	log.Info("Mappings ConfigMap has changed, requesting HelmReleases reconciliation")
+
+	var hrList helmv2.HelmReleaseList
+    if err := r.List(ctx, &hrList); err != nil {
+		log.Error(err, "Error listing HelmReleases")
+
+        return nil
+    }
+
+	requests := make([]reconcile.Request, 0, len(hrList.Items))
+	for _, hr := range hrList.Items {
+		// TODO: should we also check the OCIRepository to make sure we do that
+		//       for the GS apps only?
+
+		requests = append(requests, reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      hr.Name,
+				Namespace: hr.Namespace,
+			},
+		})
+	}
+
+	return nil
 }

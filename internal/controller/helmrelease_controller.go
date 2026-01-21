@@ -242,12 +242,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *HelmReleaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
-
-	// TODO: can we somehow assign HR CRs to a team mapping ConfigMap and wake
-	//       reconciliation up for them when the mapping changes?
-
 	return ctrl.NewControllerManagedBy(mgr).
-		// Uncomment the following line adding a pointer to an instance of the controlled resource as an argument
 		For(&helmv2.HelmRelease{}).
 		Watches(
 			&v1.ConfigMap{},
@@ -295,5 +290,5 @@ func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj
 		})
 	}
 
-	return nil
+	return requests
 }

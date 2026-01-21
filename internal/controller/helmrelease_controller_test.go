@@ -101,16 +101,16 @@ var _ = Describe("HelmRelease Controller", func() {
 				Scheme:         scheme,
 			}
 
-			req := reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "test-app-a",
-					Namespace: "org-test",
-				},
+			target := types.NamespacedName{
+				Name:      "test-app-a",
+				Namespace: "org-test",
 			}
+
+			req := reconcile.Request{NamespacedName: target}
 
 			_, err := rc.Reconcile(ctx, req)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			hrcr := helmv2.HelmRelease{}
 			err = client.Get(
@@ -122,18 +122,77 @@ var _ = Describe("HelmRelease Controller", func() {
 				&hrcr,
 			)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			team, ok := hrcr.Annotations[gsannotation.AppTeam]
 
-			Expect(ok).To(Equal(true))
+			Expect(ok).To(BeTrue())
 			Expect(team).To(Equal("team-a"))
 		})
 	})
 
 	Context("When reconciling a HelmRelease with no annotations and unavailable mapping", func() {
 		It("should leave HelmRelease as it is", func() {
+			objs = append(
+				objs,
+				&helmv2.HelmRelease{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-app-d",
+						Namespace: "org-test",
+					},
+					Spec: helmv2.HelmReleaseSpec{
+						ChartRef: &helmv2.CrossNamespaceSourceReference{
+							Kind:      "OCIRepository",
+							Name:      "test-app-d",
+							Namespace: "org-test",
+						},
+					},
+				},
+				&sourcev1beta2.OCIRepository{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-app-d",
+						Namespace: "org-test",
+					},
+					Spec: sourcev1beta2.OCIRepositorySpec{
+						URL: "oci://gsoci.azurecr.io/charts/giantswarm/app-d",
+					},
+				},
+			)
 
+			client := fake.NewClientBuilder().
+				WithScheme(scheme).
+				WithObjects(objs...).
+				Build()
+
+			rc := HelmReleaseReconciler{
+				Client:         client,
+				ControllerName: "team-stamper",
+				Scheme:         scheme,
+			}
+
+			target := types.NamespacedName{
+				Name:      "test-app-d",
+				Namespace: "org-test",
+			}
+
+			req := reconcile.Request{NamespacedName: target}
+
+			_, err := rc.Reconcile(ctx, req)
+
+			Expect(err).ToNot(HaveOccurred())
+
+			hrcr := helmv2.HelmRelease{}
+			err = client.Get(
+				ctx,
+				target,
+				&hrcr,
+			)
+
+			Expect(err).ToNot(HaveOccurred())
+
+			_, ok := hrcr.Annotations[gsannotation.AppTeam]
+
+			Expect(ok).To(BeFalse())
 		})
 	})
 })

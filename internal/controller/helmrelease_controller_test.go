@@ -50,13 +50,12 @@ var teamMappingsCm = v1.ConfigMap{
 }
 
 var _ = Describe("HelmRelease Controller", func() {
-	Context("When reconciling a HelmRelease with no annotations", func() {
+	ctx := context.Background()
 
-		ctx := context.Background()
+	logger := zap.New()
+	ctx = logr.NewContext(ctx, logger)
 
-		logger := zap.New()
-		ctx = logr.NewContext(ctx, logger)
-
+	Context("When reconciling a HelmRelease with no annotations and available mapping", func() {
 		It("should successfully add the team annotation", func() {
 
 			objs := []client.Object{&teamMappingsCm}
@@ -130,6 +129,12 @@ var _ = Describe("HelmRelease Controller", func() {
 
 			Expect(ok).To(Equal(true))
 			Expect(team).To(Equal("team-a"))
+		})
+	})
+
+	Context("When reconciling a HelmRelease with no annotations and unavailable mapping", func() {
+		It("should leave HelmRelease as it is", func() {
+
 		})
 	})
 })

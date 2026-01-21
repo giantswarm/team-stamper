@@ -31,8 +31,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
 	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
@@ -265,13 +265,13 @@ func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj
 		})
 
 	cm, ok := obj.(*v1.ConfigMap)
-    if !ok {
+	if !ok {
 		return nil
-    }
+	}
 
 	if cm.Name != mappingsCmName || cm.Namespace != mappingsCmNamespace {
-        return nil
-    }
+		return nil
+	}
 
 	log.Info("Mappings ConfigMap has changed, requesting HelmReleases reconciliation")
 
@@ -279,8 +279,8 @@ func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj
     if err := r.List(ctx, &hrList); err != nil {
 		log.Error(err, "Error listing HelmReleases")
 
-        return nil
-    }
+		return nil
+	}
 
 	requests := make([]reconcile.Request, 0, len(hrList.Items))
 	for _, hr := range hrList.Items {

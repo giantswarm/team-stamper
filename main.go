@@ -113,7 +113,7 @@ func main() {
 			ByObject: map[client.Object]cache.ByObject{
 				&v1.ConfigMap{}: {
 					Namespaces: map[string]cache.Config{
-						"default": cache.Config{
+						"default": {
 							LabelSelector: labels.SelectorFromSet(map[string]string{
 								"application.giantswarm.io/teams-mapping": "true",
 							}),

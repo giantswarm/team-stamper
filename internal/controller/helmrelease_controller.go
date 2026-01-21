@@ -96,7 +96,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		// TODO: add a final touch if needed, e.g. log, cleanup, metrics, etc.,
 		//       if needed
 
-		log.Info("Reconciliation of the HelmRelease finished")
+		log.Info("Reconciliation of the HelmRelease has finished")
 	}()
 
 	/*
@@ -108,7 +108,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 		// this cancels the reconciliation, the next reconciliation is not
 		// explicitly requested. It will however happen on next event, like
-		// object update, or caches resync period.
+		// object update, or caches resync period expiration.
 		return ctrl.Result{}, nil
 	}
 
@@ -141,24 +141,27 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		)
 
 		// TODO: this restarts the reconciliation with exponential backoff.
-		// We could maybe distinguish between not-found and other errors,
-		// and use the RequeueAfter for the former and exponential backoff
-		// for the latter.
+		//       We could maybe distinguish between not-found and other errors,
+		//       and use the RequeueAfter for the former and exponential backoff
+		//       for the latter, on the ground that OCIRepository if not there yet,
+		//       it should soon be by the rule "user wants to deploy an app", so
+		//       it may make more sense to try in equal intervals and not risk
+		//       backoff growing too much.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	if !strings.HasPrefix(ociRepo.Spec.URL, gsociPrefix) {
 		// cancel reconciliation for the object unless resync kicks in or
-		// object changes, there is no point it checking it sooner, for
-		// app does not come from GS registry.
+		// object changes, there is no point it checking it sooner for
+		// app that does not come from GS registry.
 		//
 		// TODO: check if we could create a predicate for filtering out
 		//       unwanted objects, so the reconciliation for them does
-		//       not even starts. Probably it is hard or impossible due
+		//       not even starts Probably it is hard or impossible due
 		//       to necessity of checking up the OCIRepository CR, but
-		//       still worth checking. Maybe doing this does not make
-		//       sense, for it feels like moving this checking logic
-		//       to another place, but running it anyway.
+		//       still worth checking. But also, maybe doing that does
+		//       not make sense, for it feels like moving this validation
+		//       logic to another place, but running it anyway.
 
 		return ctrl.Result{}, nil
 	}
@@ -180,7 +183,11 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Info(fmt.Sprintf("ConfigMap %s/%s not found, assigning 'noteam'", mappingsCmName, mappingsCmNamespace))
+			log.Info(fmt.Sprintf(
+				"Cancelling reconciliation, ConfigMap %s/%s not found",
+				mappingsCmName,
+				mappingsCmNamespace,
+			))
 
 			// cancel reconciliation of the object. No mapping may mean it hasn't
 			// been created yet, in which case we could maybe temporarily use
@@ -192,7 +199,11 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			// object as it is.
 			return ctrl.Result{}, nil
 		} else {
-			log.Error(err, fmt.Sprintf("Error fetching %s/%s ConfigMap", mappingsCmName, mappingsCmNamespace))
+			log.Error(err, fmt.Sprintf(
+				"Reconciliation error on fetching %s/%s ConfigMap",
+				mappingsCmName,
+				mappingsCmNamespace,
+			))
 
 			// mapping exists but there was a problem fetching it, reschedule
 			// reconciliation with a backoff.
@@ -221,6 +232,8 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		Step 4: patch the HelmRelease CR with the team information
 	*/
 
+	// We only want to manage a single field, hence we
+	// need to create a partial object
 	obj := &helmv2.HelmRelease{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: helmv2.GroupVersion.String(),
@@ -235,9 +248,10 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		},
 	}
 
+	// This is needed to satisfy the client.Client.Apply() requirements
 	unObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
 	if err != nil {
-		log.Error(err, "Error converting HelmRelease to unstructured")
+		log.Error(err, "Reconciliation error on converting HelmRelease to unstructured object")
 
 		return ctrl.Result{}, err
 	}
@@ -251,7 +265,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 			return ctrl.Result{}, nil
 		} else {
-			log.Error(err, "Error patching HelmRelease")
+			log.Error(err, "Reconciliation error on patching HelmRelease")
 
 			return ctrl.Result{}, err
 		}
@@ -302,7 +316,9 @@ func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj
 	requests := make([]reconcile.Request, 0, len(hrList.Items))
 	for _, hr := range hrList.Items {
 		// TODO: should we also check the OCIRepository to make sure we do that
-		//       for the GS apps only?
+		//       for the GS apps only? In theory we do not have to, for these
+		//       objects are goint to get filtered out by the Reconcile() anyway,
+		//       but it might be worth doing it here instead.
 
 		requests = append(requests, reconcile.Request{
 			NamespacedName: types.NamespacedName{

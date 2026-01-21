@@ -212,6 +212,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		// been updated yet. It makes sense to reschedule
 		// reconciliation after a time to check again.
 
+		// TODO: make the time configurable
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
 	}
 

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"reflect"
 
 	v1 "k8s.io/api/core/v1"
@@ -26,6 +27,10 @@ var ConfigMapDataChangedPredicate = predicate.Funcs{
 		if !ok {
 			return false
 		}
+
+		fmt.Println(oldCm.Data)
+		fmt.Println(newCm.Data)
+		fmt.Println(reflect.DeepEqual(oldCm.Data, newCm.Data))
 
 		return !reflect.DeepEqual(oldCm.Data, newCm.Data)
 	},

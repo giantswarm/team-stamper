@@ -43,7 +43,6 @@ import (
 const (
 	mappingsCmName      = "apps-to-teams-mapping"
 	mappingsCmNamespace = "default"
-	noteam              = "noteam"
 	gsociPrefix         = "oci://gsoci.azurecr.io"
 )
 
@@ -205,14 +204,6 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				mappingsCmNamespace,
 			))
 
-			// cancel reconciliation of the object. No mapping may mean it hasn't
-			// been created yet, in which case we could maybe temporarily use
-			// `noteam`, but it may also mean it previously was available, but is
-			// only now gone, due to accidental deletion or migration for example,
-			// in which case we cannot use `noteam` safely for it may replace
-			// existing information. We could also check for existing information,
-			// but this complicates the logic, where it is better to leave the
-			// object as it is.
 			return ctrl.Result{}, nil
 		} else {
 			log.Error(err, fmt.Sprintf(
@@ -259,7 +250,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				"annotations": map[string]interface{}{
 					gsannotation.AppTeam: assignedTeam,
 				},
-				"name":      r.Name,
+				"name":      cr.Name,
 				"namespace": cr.Namespace,
 			},
 		},

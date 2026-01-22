@@ -34,6 +34,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
 	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
@@ -281,7 +282,7 @@ func (r *HelmReleaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			predicate.GenerationChangedPredicate{},
 		)).
 		Watches(
-			&v1.ConfigMap{},
+			source.Kind(mgr.GetCache(), &v1.ConfigMap{}),
 			handler.TypedEnqueueRequestsFromMapFunc(r.requestsForHelmReleases),
 			builder.WithPredicates(ConfigMapDataChangedPredicate),
 		).
@@ -311,7 +312,7 @@ func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj
 
 	fmt.Println(cm)
 
-	log.Info("Mappings ConfigMap has changed, requesting HelmReleases reconciliation")
+	//log.Info("Mappings ConfigMap has changed, requesting HelmReleases reconciliation")
 
 	var hrList helmv2.HelmReleaseList
 	if err := r.List(ctx, &hrList); err != nil {

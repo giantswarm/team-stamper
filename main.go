@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"os"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -60,7 +61,7 @@ func main() {
 		enableLeaderElection bool
 		probeAddr            string
 		enableHTTP2          bool
-		requeueOnMissingOCI time.Duration
+		requeueOnMissingOCI  time.Duration
 	)
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to e.g. :8080. "+

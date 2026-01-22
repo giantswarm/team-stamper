@@ -134,10 +134,11 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	ociRepo := &sourcev1beta2.OCIRepository{}
 	if err := r.Get(ctx, ociRepoName, ociRepo); err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Info(fmt.Sprintf(
-				"Reconciliation error due to the %s/%s OCIRepository not present",
-				ociRepoName.Name,
-				ociRepoName.Namespace,
+			log.Info(
+				fmt.Sprintf(
+					"Reconciliation error due to the %s/%s OCIRepository not present",
+					ociRepoName.Name,
+					ociRepoName.Namespace,
 				),
 			)
 

@@ -235,6 +235,8 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	assignedTeam, ok := mappingCm.Data[appName]
 
 	if !ok {
+		log.Info(fmt.Sprintf("Cancelling reconciliation, no team found for %s app", appName))
+
 		// we could implement here waiting selected interval
 		// as in the case of OCIRepository. But we also have
 		// a watcher over the mappings CM, hence when it changes
@@ -277,7 +279,8 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	err = r.Apply(ctx, applyCfg, client.FieldOwner(r.ControllerName))
 	if err != nil {
 		if apierrors.IsConflict(err) {
-			log.Info("Cancelling reconciliation due to team annotation having different owner")
+			// log.Info("Cancelling reconciliation due to team annotation having different owner")
+			log.Error(err, "Reconciliation error on patching HelmRelease")
 
 			return ctrl.Result{}, nil
 		} else {

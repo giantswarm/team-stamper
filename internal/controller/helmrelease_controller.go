@@ -309,6 +309,8 @@ func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj
 		return nil
 	}
 
+	log.Info(obj)
+
 	log.Info("Mappings ConfigMap has changed, requesting HelmReleases reconciliation")
 
 	var hrList helmv2.HelmReleaseList

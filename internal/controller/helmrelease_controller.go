@@ -252,35 +252,26 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	// We only want to manage a single field, hence we
 	// need to create a partial object
-	obj := &helmv2.HelmRelease{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: helmv2.GroupVersion.String(),
-			Kind:       helmv2.HelmReleaseKind,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{
-				gsannotation.AppTeam: assignedTeam,
+	partObj := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": helmv2.GroupVersion.String(),
+			"kind":       helmv2.HelmReleaseKind,
+			"metadata": map[string]interface{}{
+				"annotations": map[string]interface{}{
+					gsannotation.AppTeam: assignedTeam,
+				},
+				"name":      r.Name,
+				"namespace": cr.Namespace,
 			},
-			Name:      cr.Name,
-			Namespace: cr.Namespace,
 		},
 	}
 
-	// This is needed to satisfy the client.Client.Apply() requirements
-	unObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
-	if err != nil {
-		log.Error(err, "Reconciliation error on converting HelmRelease to unstructured object")
-
-		return ctrl.Result{}, err
-	}
-
-	applyCfg := client.ApplyConfigurationFromUnstructured(&unstructured.Unstructured{Object: unObj})
+	applyCfg := client.ApplyConfigurationFromUnstructured(partObj)
 
 	err = r.Apply(ctx, applyCfg, client.FieldOwner(r.ControllerName))
 	if err != nil {
 		if apierrors.IsConflict(err) {
-			// log.Info("Cancelling reconciliation due to team annotation having different owner")
-			log.Error(err, "Reconciliation error on patching HelmRelease")
+			log.Info("Cancelling reconciliation due to team annotation having different owner")
 
 			return ctrl.Result{}, nil
 		} else {

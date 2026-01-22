@@ -144,7 +144,7 @@ func main() {
 	if err := (&controller.HelmReleaseReconciler{
 		Client:              mgr.GetClient(),
 		ControllerName:      controllerName,
-		RequeueOnMissingOCI: requeueOnMissingOCI,
+		RequeueOnMissingOCI: requeueAfterOnMissingOCI,
 		Scheme:              mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "HelmRelease")

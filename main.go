@@ -62,11 +62,11 @@ func init() {
 // nolint:gocyclo
 func main() {
 	var (
-		metricsAddr          string
-		enableLeaderElection bool
-		probeAddr            string
-		enableHTTP2          bool
-		requeueOnMissingOCI  time.Duration
+		metricsAddr              string
+		enableLeaderElection     bool
+		probeAddr                string
+		enableHTTP2              bool
+		requeueAfterOnMissingOCI time.Duration
 	)
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to e.g. :8080. "+
@@ -77,8 +77,8 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
-	flag.DurationVar(&requeueOnMissingOCI, "reque-on-missing-oci", 120*time.Second,
-		"The interval at which HelmRelease is reevaluated when team mapping is missing")
+	flag.DurationVar(&requeueAfterOnMissingOCI, "requeue-after-on-missing-oci", 120*time.Second,
+		"The interval at which HelmRelease is reevaluated when OCIRepository is missing")
 
 	opts := zap.Options{
 		Development: true,

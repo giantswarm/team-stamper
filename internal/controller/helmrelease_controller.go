@@ -283,7 +283,7 @@ func (r *HelmReleaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(
 			&v1.ConfigMap{},
 			handler.TypedEnqueueRequestsFromMapFunc(r.requestsForHelmReleases),
-			builder.WithPredicate(predicate.GenerationChangedPredicate{}),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		Named("helmrelease").
 		Complete(r)

@@ -6,6 +6,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
+    helmv2 "github.com/fluxcd/helm-controller/api/v2"
+    gsannotation "github.com/giantswarm/k8smetadata/pkg/annotation"
 )
 
 var ConfigMapDataChangedPredicate = predicate.Funcs{
@@ -28,6 +31,29 @@ var ConfigMapDataChangedPredicate = predicate.Funcs{
 		}
 
 		return !reflect.DeepEqual(oldCm.Data, newCm.Data)
+	},
+	GenericFunc: func(e event.GenericEvent) bool {
+		return false
+	},
+}
+
+var HelmReleaseNoTeamPredicate = predicate.Funcs{
+	CreateFunc: func(e event.CreateEvent) bool {
+		return true
+	},
+	DeleteFunc: func(e event.DeleteEvent) bool {
+		return false
+	},
+	UpdateFunc: func(e event.UpdateEvent) bool {
+        newHr, ok := e.ObjectNew.(*helmv2.HelmRelease)
+
+		if !ok {
+			return false
+		}
+
+        _, ok = newHr.Annotations[gsannotation.AppTeam]
+
+        return !ok
 	},
 	GenericFunc: func(e event.GenericEvent) bool {
 		return false

@@ -279,6 +279,7 @@ func (r *HelmReleaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&helmv2.HelmRelease{}, builder.WithPredicates(
 			predicate.GenerationChangedPredicate{},
+			HelmReleaseNoTeamPredicate,
 		)).
 		Watches(
 			&v1.ConfigMap{},

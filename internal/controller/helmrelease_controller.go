@@ -278,7 +278,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 func (r *HelmReleaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&helmv2.HelmRelease{}, builder.WithPredicates(
-			predicate.GenerationChangedPredicate{},
+			ConfigMapDataChangedPredicate,
 		)).
 		Watches(
 			&v1.ConfigMap{},

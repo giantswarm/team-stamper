@@ -283,7 +283,7 @@ func (r *HelmReleaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(
 			&v1.ConfigMap{},
 			handler.TypedEnqueueRequestsFromMapFunc(r.requestsForHelmReleases),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Named("helmrelease").
 		Complete(r)
@@ -320,11 +320,11 @@ func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj
 
 	requests := make([]reconcile.Request, 0, len(hrList.Items))
 	for _, hr := range hrList.Items {
-		// TODO: should we also check the OCIRepository to make sure we do that
-		//       for the GS apps only? In theory we do not have to, for these
-		//       objects are goint to get filtered out by the Reconcile() anyway,
-		//       but it might be worth doing it here instead.
 
+		// There is no verification HelmRelease tries to install
+		// an app from the Giant Swarm OCIRepository here. This is
+		// part of the Reconcile(), hence here we only schedule
+		// HelmRelease CRs for further checking.
 		requests = append(requests, reconcile.Request{
 			NamespacedName: types.NamespacedName{
 				Name:      hr.Name,

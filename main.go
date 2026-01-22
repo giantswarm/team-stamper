@@ -77,7 +77,7 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
-	flag.DurationVar(&requeueOnMissingOCI, "reque-on-missing-oci", 5*time.Second,
+	flag.DurationVar(&requeueOnMissingOCI, "reque-on-missing-oci", 120*time.Second,
 		"The interval at which HelmRelease is reevaluated when team mapping is missing")
 
 	opts := zap.Options{

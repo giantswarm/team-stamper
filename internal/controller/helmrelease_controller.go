@@ -53,7 +53,8 @@ type HelmReleaseReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	ControllerName string
+	ControllerName      string
+	RequeueOnMissingOCI time.Duration
 }
 
 // +kubebuilder:rbac:groups=helm.toolkit.fluxcd.io.application.giantswarm.io,resources=helmreleases,verbs=get;list;watch;create;update;patch;delete
@@ -132,22 +133,33 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	// Get referenced OCIRepository CR
 	ociRepo := &sourcev1beta2.OCIRepository{}
 	if err := r.Get(ctx, ociRepoName, ociRepo); err != nil {
-		log.Error(err,
-			fmt.Sprintf(
-				"Reconciliation error due to the %s/%s OCIRepository not present",
-				ociRepoName.Name,
-				ociRepoName.Namespace,
-			),
-		)
+		if apierrors.IsNotFound(err) {
+			log.Error(err,
+				fmt.Sprintf(
+					"Reconciliation error due to the %s/%s OCIRepository not present",
+					ociRepoName.Name,
+					ociRepoName.Namespace,
+				),
+			)
 
-		// TODO: this restarts the reconciliation with exponential backoff.
-		//       We could maybe distinguish between not-found and other errors,
-		//       and use the RequeueAfter for the former and exponential backoff
-		//       for the latter, on the ground that OCIRepository if not there yet,
-		//       it should soon be by the rule "user wants to deploy an app", so
-		//       it may make more sense to try in equal intervals and not risk
-		//       backoff growing too much.
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+			// I distinguish the two cases on the following premise.
+			// By design, user wants his app deployed and he must create
+			// an OCIRepository for that. If it is not present, it is fair
+			// to assume it will soon be there. Hence there is no real value
+			// in returning error and falling into exponential backoff
+			// mechanism, instead we can simply wait a moment and re-check.
+			return ctrl.Result{RequeueAfter: r.RequeueOnMissingOCI}, nil
+		} else {
+			log.Error(err,
+				fmt.Sprintf(
+					"Reconciliation error on fetching %s/%s OCIRepository",
+					ociRepoName.Name,
+					ociRepoName.Namespace,
+				),
+			)
+
+			return ctrl.Result{}, client.IgnoreNotFound(err)
+		}
 	}
 
 	if !strings.HasPrefix(ociRepo.Spec.URL, gsociPrefix) {
@@ -218,14 +230,13 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	assignedTeam, ok := mappingCm.Data[appName]
 
 	if !ok {
-		// the mapping CM is available but not team has been
-		// found for the app. By the rule all GS apps should
-		// have teams, hence most likely the mapping CM hasn't
-		// been updated yet. It makes sense to reschedule
-		// reconciliation after a time to check again.
+		// we could implement here waiting selected interval
+		// as in the case of OCIRepository. But we also have
+		// a watcher over the mappings CM, hence when it changes
+		// this HelmRelease should get scheduled for reconciliation,
+		// hence it does not seem we need to reschedule it here.
 
-		// TODO: make the time configurable
-		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
+		return ctrl.Result{}, nil
 	}
 
 	/*
@@ -301,6 +312,10 @@ func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj
 	}
 
 	if cm.Name != mappingsCmName || cm.Namespace != mappingsCmNamespace {
+		return nil
+	}
+
+	if !cm.DeletionTimestamp.IsZero() {
 		return nil
 	}
 

@@ -136,7 +136,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		if apierrors.IsNotFound(err) {
 			log.Info(
 				fmt.Sprintf(
-					"Reconciliation error due to the %s/%s OCIRepository not present",
+					"Cancelling reconciliation, OCIRepository %s/%s not found",
 					ociRepoName.Name,
 					ociRepoName.Namespace,
 				),
@@ -163,6 +163,11 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if !strings.HasPrefix(ociRepo.Spec.URL, gsociPrefix) {
+		log.Info(fmt.Sprintf(
+			"Cancelling reconciliation, app does not come from %s OCI registry",
+			gsociPrefix,
+		))
+
 		// cancel reconciliation for the object unless resync kicks in or
 		// object changes, there is no point it checking it sooner for
 		// app that does not come from GS registry.

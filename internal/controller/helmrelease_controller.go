@@ -312,11 +312,11 @@ func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj
 	for _, hr := range hrList.Items {
 		if hr.Spec.ChartRef == nil {
 			continue
-    	}
+		}
 
-    	if hr.Spec.ChartRef.Kind != sourcev1beta2.OCIRepositoryKind {
+		if hr.Spec.ChartRef.Kind != sourcev1beta2.OCIRepositoryKind {
 			continue
-    	}
+		}
 
 		// There is no verification HelmRelease tries to install
 		// an app from the Giant Swarm OCIRepository here, because

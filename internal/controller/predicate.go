@@ -8,7 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
-    sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
+	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
 	gsannotation "github.com/giantswarm/k8smetadata/pkg/annotation"
 )
 
@@ -52,13 +52,13 @@ var HelmReleaseNoTeamPredicate = predicate.Funcs{
 			return false
 		}
 
-        if newHr.Spec.ChartRef == nil {
-            return false
-    	}
+		if newHr.Spec.ChartRef == nil {
+			return false
+		}
 
-    	if newHr.Spec.ChartRef.Kind != sourcev1beta2.OCIRepositoryKind {
-            return false
-    	}
+		if newHr.Spec.ChartRef.Kind != sourcev1beta2.OCIRepositoryKind {
+			return false
+		}
 
 		_, ok = newHr.Annotations[gsannotation.AppTeam]
 

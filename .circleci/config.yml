@@ -42,3 +42,12 @@ workflows:
             branches:
               ignore:
               - main
+
+      - architect/integration-test:
+          context: architect
+          name: basic-test
+          setup-script: tests/setup/setup.sh
+          test-dir: test/basic
+          requires:
+            - go-build
+            - push-to-app-catalog

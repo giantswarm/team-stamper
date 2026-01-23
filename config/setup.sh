@@ -13,6 +13,8 @@ echo $KUBECONFIG
 
 ls -l ../helm/team-stamper
 
+kubectl get pods --all-namespaces
+
 # Install Flux app
 #helm repo add giantswarm https://giantswarm.github.io/giantswarm-catalog
 #helm repo update

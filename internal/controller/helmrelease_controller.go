@@ -102,23 +102,8 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		Step 1: get OCIRepository CR if referenced, skip otherwise
 	*/
 
-	if cr.Spec.ChartRef == nil {
-		log.Info("Cancelling reconciliation, the .spec.chartRef field not present")
-
-		// this cancels the reconciliation, the next reconciliation is not
-		// explicitly requested. It will however happen on next event, like
-		// object update, or caches resync period expiration.
-		return ctrl.Result{}, nil
-	}
-
-	if cr.Spec.ChartRef.Kind != sourcev1beta2.OCIRepositoryKind {
-		log.Info("Cancelling reconciliation, the .spec.chartRef.kind does not refer to OCIRepository CR")
-
-		// same case as above, no reconciliation requested unless object
-		// changes or resync kicks in.
-		return ctrl.Result{}, nil
-	}
-
+	// HelmRelease not pointing to OCIRepository should be filtered
+	// out at this point.
 	ociRepoName := types.NamespacedName{
 		Name:      cr.Spec.ChartRef.Name,
 		Namespace: cr.GetNamespace(),
@@ -325,11 +310,22 @@ func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj
 
 	requests := make([]reconcile.Request, 0, len(hrList.Items))
 	for _, hr := range hrList.Items {
+		if hr.Spec.ChartRef == nil {
+			continue
+    	}
+
+    	if hr.Spec.ChartRef.Kind != sourcev1beta2.OCIRepositoryKind {
+			continue
+    	}
 
 		// There is no verification HelmRelease tries to install
-		// an app from the Giant Swarm OCIRepository here. This is
-		// part of the Reconcile(), hence here we only schedule
-		// HelmRelease CRs for further checking.
+		// an app from the Giant Swarm OCIRepository here, because
+		// we cannot know the OCIRepository CR exists. We could
+		// proceed with verification when it does, and enqueue
+		// unconditionally otherwise, but this would make the logic
+		// more complex, while checking it in Reconcile() feels
+		// easier. Though the idea of filtering out non-GS apps
+		// still feels tempting.
 		requests = append(requests, reconcile.Request{
 			NamespacedName: types.NamespacedName{
 				Name:      hr.Name,

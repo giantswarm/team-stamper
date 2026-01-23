@@ -45,9 +45,9 @@ workflows:
 
       - architect/integration-test:
           context: architect
-          name: basic-test
-          setup-script: tests/setup/setup.sh
-          test-dir: tests/basic
+          name: e2e-tests
+          setup-script: config/setup.sh
+          test-dir: tests/integration
           requires:
             - go-build
             - push-to-app-catalog

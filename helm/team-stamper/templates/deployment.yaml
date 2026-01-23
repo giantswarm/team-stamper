@@ -29,7 +29,7 @@ spec:
           image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ default .Chart.Version .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
-            - --leader-election
+            - --leader-election=true
             {{- if gt (int .Values.metrics.port) 0 }}
             - --metrics-bind-address={{ printf ":%d" (int .Values.metrics.port) }}
             {{- end }}

@@ -19,22 +19,32 @@ package main
 import (
 	"flag"
 	"os"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	helmv2 "github.com/fluxcd/helm-controller/api/v2"
+	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
+
 	"github.com/giantswarm/team-stamper/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
+
+const controllerName = "team-stamper"
 
 var (
 	scheme   = runtime.NewScheme()
@@ -44,23 +54,32 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
+	utilruntime.Must(helmv2.AddToScheme(scheme))
+	utilruntime.Must(sourcev1beta2.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
 // nolint:gocyclo
 func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	var probeAddr string
-	var enableHTTP2 bool
+	var (
+		metricsAddr              string
+		enableLeaderElection     bool
+		probeAddr                string
+		enableHTTP2              bool
+		requeueAfterOnMissingOCI time.Duration
+	)
+
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to e.g. :8080. "+
 		"Leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
+	flag.BoolVar(&enableLeaderElection, "leader-election", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	flag.DurationVar(&requeueAfterOnMissingOCI, "requeue-after-on-missing-oci", 120*time.Second,
+		"The interval at which HelmRelease is reevaluated when OCIRepository is missing")
+
 	opts := zap.Options{
 		Development: true,
 	}
@@ -83,6 +102,7 @@ func main() {
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "52448afe.application.giantswarm.io",
+
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
@@ -93,7 +113,28 @@ func main() {
 		// the manager stops, so would be fine to enable this option. However,
 		// if you are doing or is intended to do any operation such as perform cleanups
 		// after the manager stops then its usage might be unsafe.
+
 		// LeaderElectionReleaseOnCancel: true,
+
+		// When we tell manager to watch certain GVKs, or when controller do GETs with
+		// a caching client for example, the manager starts caching. It does it by running
+		// informers to cache objects of a given GVKs. For HelmRelease CRs and
+		// OCIRepositories that's ok, for we want all of them, mostly, but we only want
+		// a single teams mapping ConfigMap, hence it makes sense to reduce what ConfigMaps
+		// are cached here to only a single namespace and selector.
+		Cache: cache.Options{
+			ByObject: map[client.Object]cache.ByObject{
+				&v1.ConfigMap{}: {
+					Namespaces: map[string]cache.Config{
+						"default": {
+							LabelSelector: labels.SelectorFromSet(map[string]string{
+								"application.giantswarm.io/apps-to-teams-mapping": "true",
+							}),
+						},
+					},
+				},
+			},
+		},
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -101,8 +142,10 @@ func main() {
 	}
 
 	if err := (&controller.HelmReleaseReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:              mgr.GetClient(),
+		ControllerName:      controllerName,
+		RequeueOnMissingOCI: requeueAfterOnMissingOCI,
+		Scheme:              mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "HelmRelease")
 		os.Exit(1)

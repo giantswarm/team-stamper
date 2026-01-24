@@ -11,7 +11,7 @@ export KUBECONFIG=/tmp/kind.kubeconfig
 
 echo $KUBECONFIG
 
-ls -l ../helm/team-stamper
+ls -l helm/team-stamper
 
 kubectl get pods --all-namespaces
 

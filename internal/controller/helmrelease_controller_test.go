@@ -62,47 +62,12 @@ var _ = Describe("HelmRelease Controller", func() {
 
 	Context("When reconciling a HelmRelease with no annotations and available mapping", func() {
 		It("should successfully add the team annotation", func() {
-			objs := []client.Object{
-				&teamMappingsCm,
-				&helmv2.HelmRelease{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-app-a",
-						Namespace: "org-test",
-					},
-					Spec: helmv2.HelmReleaseSpec{
-						ChartRef: &helmv2.CrossNamespaceSourceReference{
-							Kind:      "OCIRepository",
-							Name:      "test-app-a",
-							Namespace: "org-test",
-						},
-					},
-				},
-				&sourcev1beta2.OCIRepository{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-app-a",
-						Namespace: "org-test",
-					},
-					Spec: sourcev1beta2.OCIRepositorySpec{
-						URL: "oci://gsoci.azurecr.io/charts/giantswarm/app-a",
-					},
-				},
-			}
+			objs := []client.Object{&teamMappingsCm}
+			objs = append(objs, appObjects("app-a", "org-test")...)
 
-			client := fake.NewClientBuilder().
-				WithScheme(scheme).
-				WithObjects(objs...).
-				Build()
+			rc := createReconciler(scheme, objs)
 
-			rc := HelmReleaseReconciler{
-				Client:         client,
-				ControllerName: "team-stamper",
-				Scheme:         scheme,
-			}
-
-			target := types.NamespacedName{
-				Name:      "test-app-a",
-				Namespace: "org-test",
-			}
+			target := types.NamespacedName{Name: "app-a", Namespace: "org-test"}
 
 			req := reconcile.Request{NamespacedName: target}
 
@@ -111,14 +76,7 @@ var _ = Describe("HelmRelease Controller", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			hrcr := helmv2.HelmRelease{}
-			err = client.Get(
-				ctx,
-				types.NamespacedName{
-					Name:      "test-app-a",
-					Namespace: "org-test",
-				},
-				&hrcr,
-			)
+			err = rc.Client.Get(ctx, target, &hrcr)
 
 			Expect(err).ToNot(HaveOccurred())
 
@@ -131,47 +89,12 @@ var _ = Describe("HelmRelease Controller", func() {
 
 	Context("When reconciling a HelmRelease with no annotations and unavailable mapping", func() {
 		It("should leave HelmRelease as it is", func() {
-			objs := []client.Object{
-				&teamMappingsCm,
-				&helmv2.HelmRelease{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-app-d",
-						Namespace: "org-test",
-					},
-					Spec: helmv2.HelmReleaseSpec{
-						ChartRef: &helmv2.CrossNamespaceSourceReference{
-							Kind:      "OCIRepository",
-							Name:      "test-app-d",
-							Namespace: "org-test",
-						},
-					},
-				},
-				&sourcev1beta2.OCIRepository{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-app-d",
-						Namespace: "org-test",
-					},
-					Spec: sourcev1beta2.OCIRepositorySpec{
-						URL: "oci://gsoci.azurecr.io/charts/giantswarm/app-d",
-					},
-				},
-			}
+			objs := []client.Object{&teamMappingsCm}
+			objs = append(objs, appObjects("app-d", "org-test")...)
 
-			client := fake.NewClientBuilder().
-				WithScheme(scheme).
-				WithObjects(objs...).
-				Build()
+			rc := createReconciler(scheme, objs)
 
-			rc := HelmReleaseReconciler{
-				Client:         client,
-				ControllerName: "team-stamper",
-				Scheme:         scheme,
-			}
-
-			target := types.NamespacedName{
-				Name:      "test-app-d",
-				Namespace: "org-test",
-			}
+			target := types.NamespacedName{Name: "app-d", Namespace: "org-test"}
 
 			req := reconcile.Request{NamespacedName: target}
 
@@ -180,11 +103,7 @@ var _ = Describe("HelmRelease Controller", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			hrcr := helmv2.HelmRelease{}
-			err = client.Get(
-				ctx,
-				target,
-				&hrcr,
-			)
+			err = rc.Client.Get(ctx, target, &hrcr)
 
 			Expect(err).ToNot(HaveOccurred())
 
@@ -196,62 +115,66 @@ var _ = Describe("HelmRelease Controller", func() {
 
 	Context("When running requestsForHelmReleases() for mappings ConfigMap", func() {
 		It("should return list of all HelmRelease CRs", func() {
-			objs := []client.Object{
-				&teamMappingsCm,
-				&helmv2.HelmRelease{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-app-a",
-						Namespace: "org-test-1",
-					},
-					Spec: helmv2.HelmReleaseSpec{
-						ChartRef: &helmv2.CrossNamespaceSourceReference{
-							Kind:      "OCIRepository",
-							Name:      "test-app-a",
-							Namespace: "org-test-1",
-						},
-					},
-				},
-				&helmv2.HelmRelease{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-app-b",
-						Namespace: "org-test-2",
-					},
-					Spec: helmv2.HelmReleaseSpec{
-						ChartRef: &helmv2.CrossNamespaceSourceReference{
-							Kind:      "OCIRepository",
-							Name:      "test-app-b",
-							Namespace: "org-test-2",
-						},
-					},
-				},
-			}
+			objs := []client.Object{&teamMappingsCm}
+			objs = append(objs, appObjects("app-a", "org-test-1")...)
+			objs = append(objs, appObjects("app-b", "org-test-2")...)
 
-			client := fake.NewClientBuilder().
-				WithScheme(scheme).
-				WithObjects(objs...).
-				Build()
-
-			rc := HelmReleaseReconciler{
-				Client:         client,
-				ControllerName: "team-stamper",
-				Scheme:         scheme,
-			}
+			rc := createReconciler(scheme, objs)
 
 			reqList := rc.requestsForHelmReleases(ctx, &teamMappingsCm)
 
 			Expect(reqList).To(HaveLen(2))
 			Expect(reqList[0]).To(Equal(reconcile.Request{
 				NamespacedName: types.NamespacedName{
-					Name:      "test-app-a",
+					Name:      "app-a",
 					Namespace: "org-test-1",
 				},
 			}))
 			Expect(reqList[1]).To(Equal(reconcile.Request{
 				NamespacedName: types.NamespacedName{
-					Name:      "test-app-b",
+					Name:      "app-b",
 					Namespace: "org-test-2",
 				},
 			}))
 		})
 	})
 })
+
+func appObjects(app, org string) []client.Object {
+	return []client.Object{
+		&helmv2.HelmRelease{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      app,
+				Namespace: org,
+			},
+			Spec: helmv2.HelmReleaseSpec{
+				ChartRef: &helmv2.CrossNamespaceSourceReference{
+					Kind:      "OCIRepository",
+					Name:      app,
+					Namespace: org,
+				},
+			},
+		},
+		&sourcev1beta2.OCIRepository{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      app,
+				Namespace: org,
+			},
+			Spec: sourcev1beta2.OCIRepositorySpec{
+				URL: "oci://gsoci.azurecr.io/charts/giantswarm/" + app,
+			},
+		},
+	}
+}
+
+func createReconciler(scheme *runtime.Scheme, objs []client.Object) HelmReleaseReconciler {
+	return HelmReleaseReconciler{
+		Client: fake.NewClientBuilder().
+			WithScheme(scheme).
+			WithObjects(objs...).
+			Build(),
+
+		ControllerName: "team-stamper",
+		Scheme:         scheme,
+	}
+}

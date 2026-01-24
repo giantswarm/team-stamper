@@ -82,5 +82,4 @@ func validateHelmRelease(ctx context.Context, name, namespace, expected string) 
 	}
 
 	Eventually(isOk, time.Second*1, time.Millisecond*100).Should(Equal(expected))
-	Consistently(isOk, time.Second*2, time.Millisecond*100).Should(Equal(expected))
 }

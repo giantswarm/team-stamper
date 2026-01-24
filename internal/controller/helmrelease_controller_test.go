@@ -76,7 +76,7 @@ var _ = Describe("HelmRelease Controller", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			hrcr := helmv2.HelmRelease{}
-			err = rc.Client.Get(ctx, target, &hrcr)
+			err = rc.Get(ctx, target, &hrcr)
 
 			Expect(err).ToNot(HaveOccurred())
 
@@ -103,7 +103,7 @@ var _ = Describe("HelmRelease Controller", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			hrcr := helmv2.HelmRelease{}
-			err = rc.Client.Get(ctx, target, &hrcr)
+			err = rc.Get(ctx, target, &hrcr)
 
 			Expect(err).ToNot(HaveOccurred())
 

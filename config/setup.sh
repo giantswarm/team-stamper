@@ -26,8 +26,8 @@ TAG=$(architect project version)
 if [[ $local -eq 1 ]];
 then
     make build-docker
-    docker image tag ${REPOSITORY}:${TAG} ${REGISTRY}/${REPOSITORY}:${TAG}
-    kind load docker-image ${REGISTRY}/${REPOSITORY}:${TAG}
+    docker image tag "${REPOSITORY}:${TAG}" "${REGISTRY}/${REPOSITORY}:${TAG}"
+    kind load docker-image "${REGISTRY}/${REPOSITORY}:${TAG}"
 fi
 
 

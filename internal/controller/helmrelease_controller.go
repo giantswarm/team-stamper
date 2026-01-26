@@ -185,7 +185,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		if apierrors.IsNotFound(err) {
 			log.Info(fmt.Sprintf(
 				"Cancelling reconciliation, ConfigMap %s/%s not found",
-				mappingsCmNamespace
+				mappingsCmNamespace,
 				mappingsCmName,
 			))
 
@@ -193,7 +193,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		} else {
 			log.Error(err, fmt.Sprintf(
 				"Reconciliation error on fetching %s/%s ConfigMap",
-				mappingsCmNamespace
+				mappingsCmNamespace,
 				mappingsCmName,
 			))
 

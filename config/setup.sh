@@ -30,12 +30,10 @@ then
     kind load docker-image "${REGISTRY}/${REPOSITORY}:${TAG}"
 fi
 
-
-
 # Install latest Flux app
 helm repo add giantswarm https://giantswarm.github.io/giantswarm-catalog
 helm repo update
 helm install --wait flux giantswarm/flux-app --set podMonitors.enabled=false
 
 # Install Team Stamper
-helm install --wait stamper ./helm/team-stamper --set image.tag=$TAG
+helm install --wait stamper ./helm/team-stamper --set image.tag="$TAG"

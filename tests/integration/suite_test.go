@@ -3,11 +3,14 @@
 package integration
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
@@ -42,15 +45,84 @@ var _ = BeforeSuite(func() {
 
 	scheme := runtime.NewScheme()
 
-	err = clientgoscheme.AddToScheme(scheme)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = helmv2.AddToScheme(scheme)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = sourcev1beta2.AddToScheme(scheme)
-	Expect(err).ToNot(HaveOccurred())
+	Expect(clientgoscheme.AddToScheme(scheme)).Should(Succeed())
+	Expect(helmv2.AddToScheme(scheme)).Should(Succeed())
+	Expect(sourcev1beta2.AddToScheme(scheme)).Should(Succeed())
 
 	k8sClient, err = client.New(config, client.Options{Scheme: scheme})
 	Expect(err).ToNot(HaveOccurred())
+
+	Expect(k8sClient.Create(
+		context.Background(),
+		&v1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{
+					"application.giantswarm.io/apps-to-teams-mapping": "true",
+				},
+				Name:      "apps-to-teams-mapping",
+				Namespace: "default",
+			},
+			Data: map[string]string{
+				"app-a": "honeybadger",
+				"app-b": "cabbage",
+				"app-c": "rocket",
+			},
+		},
+	)).Should(Succeed())
+})
+
+var _ = AfterSuite(func() {
+	// this is not strictly needed for CircleCI, for we use
+	// ephemeral KinD cluster there anyway, but it helps
+	// testing locally
+
+	Expect(k8sClient.Delete(
+		context.Background(),
+		&v1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "apps-to-teams-mapping",
+				Namespace: "default",
+			},
+		},
+	)).Should(Succeed())
+
+	Expect(k8sClient.Delete(
+		context.Background(),
+		&helmv2.HelmRelease{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-app-a",
+				Namespace: "default",
+			},
+		},
+	)).Should(Succeed())
+
+	Expect(k8sClient.Delete(
+		context.Background(),
+		&helmv2.HelmRelease{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-app-d",
+				Namespace: "default",
+			},
+		},
+	)).Should(Succeed())
+
+	Expect(k8sClient.Delete(
+		context.Background(),
+		&sourcev1beta2.OCIRepository{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-app-a",
+				Namespace: "default",
+			},
+		},
+	)).Should(Succeed())
+
+	Expect(k8sClient.Delete(
+		context.Background(),
+		&sourcev1beta2.OCIRepository{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-app-d",
+				Namespace: "default",
+			},
+		},
+	)).Should(Succeed())
 })

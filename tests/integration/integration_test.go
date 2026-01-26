@@ -5,9 +5,12 @@ package integration
 import (
 	"context"
 	"time"
+	"reflect"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -22,9 +25,39 @@ var _ = Describe("Integration Tests", func() {
 
 	Context("When team mapping is available for an app and this app gets installed with HelmRelease", func() {
 		It("should get the team annotation", func() {
-			createOCIRepository(ctx, "app-a", "fake-app-a", "default")
-			createHelmRelease(ctx, "fake-app-a", "default")
-			validateHelmRelease(ctx, "fake-app-a", "default", "honeybadger")
+			createOCIRepository(ctx, "app-a", "test-app-a", "default")
+			createHelmRelease(ctx, "test-app-a", "default")
+			validateHelmRelease(ctx, "test-app-a", "default", "honeybadger")
+		})
+	})
+
+	Context("When team mapping is unavailable for an app and this app gets installed with HelmRelease", func() {
+		It("should not get the team annotation", func() {
+			createOCIRepository(ctx, "app-d", "test-app-d", "default")
+			createHelmRelease(ctx, "test-app-d", "default")
+			validateHelmRelease(ctx, "test-app-d", "default", "")
+		})
+	})
+
+	Context("When team mapping become available for app alraedy installed with HelmRelease", func() {
+		It("should get the team annotation", func() {
+			updateMappingConfigMap(ctx, func(data map[string]string) map[string]string {
+				data["app-d"] = "shield"
+
+				return data
+			})
+			validateHelmRelease(ctx, "test-app-d", "default", "shield")
+		})
+	})
+
+	Context("When team mapping changes for app alraedy installed with HelmRelease", func() {
+		It("should get the new team annotation", func() {
+			updateMappingConfigMap(ctx, func(data map[string]string) map[string]string {
+				data["app-a"] = "tenet"
+
+				return data
+			})
+			validateHelmRelease(ctx, "test-app-a", "default", "tenet")
 		})
 	})
 })
@@ -65,6 +98,44 @@ func createOCIRepository(ctx context.Context, app, name, namespace string) {
 	Expect(k8sClient.Create(ctx, ociRepo)).Should(Succeed())
 }
 
+func updateMappingConfigMap(ctx context.Context, fn func(map[string]string) map[string]string) {
+	By("Updating HelmRelease")
+
+	cm := v1.ConfigMap{}
+
+	Expect(k8sClient.Get(
+		ctx,
+		types.NamespacedName{Name: "apps-to-teams-mapping", Namespace: "default"},
+		&cm,
+	)).Should(Succeed())
+
+	cm.Data = fn(cm.Data)
+
+	Expect(k8sClient.Update(
+		ctx,
+		&cm,
+	)).Should(Succeed())
+
+	isOk := func() bool {
+		cm := v1.ConfigMap{}
+
+		err := k8sClient.Get(
+			ctx,
+			types.NamespacedName{Name: "apps-to-teams-mapping", Namespace: "default"},
+			&cm,
+		)
+		if err != nil {
+			return false
+		}
+
+		fnData := fn(cm.Data)
+
+		return reflect.DeepEqual(cm.Data, fnData)
+	}
+
+	Eventually(isOk, time.Second*1, time.Millisecond*100).Should(BeTrue())
+}
+
 func validateHelmRelease(ctx context.Context, name, namespace, expected string) {
 	By("Validating HelmRelease")
 
@@ -82,4 +153,8 @@ func validateHelmRelease(ctx context.Context, name, namespace, expected string) 
 	}
 
 	Eventually(isOk, time.Second*1, time.Millisecond*100).Should(Equal(expected))
+
+	// this is not needed when setting annotation, but when it shouldn't
+	// be set it helps making sure HR remains without it
+	Consistently(isOk, time.Second*2, time.Millisecond*500).Should(Equal(expected))
 }

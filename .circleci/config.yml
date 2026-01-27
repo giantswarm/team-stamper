@@ -42,3 +42,12 @@ workflows:
             branches:
               ignore:
               - main
+
+      - architect/integration-test:
+          context: architect
+          name: e2e-tests
+          setup-script: config/setup.sh
+          test-dir: tests/integration
+          requires:
+            - go-build
+            - push-to-app-catalog

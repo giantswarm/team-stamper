@@ -2,6 +2,6 @@
 
 # Team Stamper Controller
 
-This controller is in charge of adding the `application.giantswarm.io/team` annotation to each HelmRelease CR, providing information of apps  ownership.
+This controller is in charge of adding the `application.giantswarm.io/team` annotation to each HelmRelease CR refering to OCIRepository CR, providing information of apps  ownership. HelmRelease CRs that are not using OCIRepository CRs as app sources are not supported.
 
-Values of this annotation are then translated by the Kube State Metrics into emitted metrics labels, which is then used for routing app-related alerts to the appropriate teams.
+Value of the annotation is then translated by the Kube State Metrics into emitted metrics label, which is then used for routing app-related alerts to the appropriate teams.

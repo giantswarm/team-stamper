@@ -120,8 +120,8 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			log.Info(
 				fmt.Sprintf(
 					"Cancelling reconciliation, OCIRepository %s/%s not found",
-					ociRepoName.Name,
 					ociRepoName.Namespace,
+					ociRepoName.Name,
 				),
 			)
 
@@ -136,8 +136,8 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			log.Error(err,
 				fmt.Sprintf(
 					"Reconciliation error on fetching %s/%s OCIRepository",
-					ociRepoName.Name,
 					ociRepoName.Namespace,
+					ociRepoName.Name,
 				),
 			)
 
@@ -185,16 +185,16 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		if apierrors.IsNotFound(err) {
 			log.Info(fmt.Sprintf(
 				"Cancelling reconciliation, ConfigMap %s/%s not found",
-				mappingsCmName,
 				mappingsCmNamespace,
+				mappingsCmName,
 			))
 
 			return ctrl.Result{}, nil
 		} else {
 			log.Error(err, fmt.Sprintf(
 				"Reconciliation error on fetching %s/%s ConfigMap",
-				mappingsCmName,
 				mappingsCmNamespace,
+				mappingsCmName,
 			))
 
 			// mapping exists but there was a problem fetching it, reschedule

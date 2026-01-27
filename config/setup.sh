@@ -18,7 +18,8 @@ done
 
 if [[ $CIRCLECI == true ]];
 then
-    ARCHITECT_LATEST=$(echo ${"$(curl -I -s -o /dev/null -w '%header{location}' https://github.com/giantswarm/architect/releases/latest)"##*/})
+    ARCHITECT_LATEST="$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/giantswarm/architect/releases/latest)"
+    ARCHITECT_LATEST="${ARCHITECT_LATEST##*/}"
     wget "https://github.com/giantswarm/architect/releases/download/${ARCHITECT_LATEST}/architect-${ARCHITECT_LATEST}-linux-amd64.tar.gz"
     tar -xzvf "architect-${ARCHITECT_LATEST}-linux-amd64.tar.gz" "architect-${ARCHITECT_LATEST}-linux-amd64/architect"
     mv "architect-${ARCHITECT_LATEST}-linux-amd64/architect" ./architect

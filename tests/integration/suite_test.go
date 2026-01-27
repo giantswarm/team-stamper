@@ -5,6 +5,7 @@ package integration
 import (
 	"context"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -12,6 +13,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -69,6 +71,23 @@ var _ = BeforeSuite(func() {
 			},
 		},
 	)).Should(Succeed())
+
+	isOk := func() bool {
+		cm := v1.ConfigMap{}
+
+		err := k8sClient.Get(
+			context.Background(),
+			types.NamespacedName{Name: "apps-to-teams-mapping", Namespace: "default"},
+			&cm,
+		)
+		if err != nil {
+			return false
+		}
+
+		return true
+	}
+
+	Eventually(isOk, time.Second*1, time.Millisecond*100).Should(BeTrue())
 })
 
 var _ = AfterSuite(func() {
@@ -86,43 +105,25 @@ var _ = AfterSuite(func() {
 		},
 	)).Should(Succeed())
 
-	Expect(k8sClient.Delete(
-		context.Background(),
-		&helmv2.HelmRelease{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-app-a",
-				Namespace: "default",
+	for _, suffix := range []string{"a", "b", "d"} {
+		Expect(k8sClient.Delete(
+			context.Background(),
+			&helmv2.HelmRelease{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-app-" + suffix,
+					Namespace: "default",
+				},
 			},
-		},
-	)).Should(Succeed())
+		)).Should(Succeed())
 
-	Expect(k8sClient.Delete(
-		context.Background(),
-		&helmv2.HelmRelease{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-app-d",
-				Namespace: "default",
+		Expect(k8sClient.Delete(
+			context.Background(),
+			&sourcev1beta2.OCIRepository{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-app-" + suffix,
+					Namespace: "default",
+				},
 			},
-		},
-	)).Should(Succeed())
-
-	Expect(k8sClient.Delete(
-		context.Background(),
-		&sourcev1beta2.OCIRepository{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-app-a",
-				Namespace: "default",
-			},
-		},
-	)).Should(Succeed())
-
-	Expect(k8sClient.Delete(
-		context.Background(),
-		&sourcev1beta2.OCIRepository{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-app-d",
-				Namespace: "default",
-			},
-		},
-	)).Should(Succeed())
+		)).Should(Succeed())
+	}
 })

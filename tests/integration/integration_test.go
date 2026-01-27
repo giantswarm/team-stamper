@@ -23,23 +23,23 @@ var _ = Describe("Integration Tests", func() {
 
 	ctx := context.Background()
 
-	Context("When team mapping is available for an app and this app gets installed with HelmRelease", func() {
+	Context("When team mapping is available for an app and this app gets installed with a HelmRelease", func() {
 		It("should get the team annotation", func() {
 			createOCIRepository(ctx, "app-a", "test-app-a", "default")
-			createHelmRelease(ctx, "test-app-a", "default")
+			createHelmRelease(ctx, "test-app-a", "default", "")
 			validateHelmRelease(ctx, "test-app-a", "default", "honeybadger")
 		})
 	})
 
-	Context("When team mapping is unavailable for an app and this app gets installed with HelmRelease", func() {
+	Context("When team mapping is unavailable for an app and this app gets installed with a HelmRelease", func() {
 		It("should not get the team annotation", func() {
 			createOCIRepository(ctx, "app-d", "test-app-d", "default")
-			createHelmRelease(ctx, "test-app-d", "default")
+			createHelmRelease(ctx, "test-app-d", "default", "")
 			validateHelmRelease(ctx, "test-app-d", "default", "")
 		})
 	})
 
-	Context("When team mapping become available for app alraedy installed with HelmRelease", func() {
+	Context("When team mapping become available for an app which is alraedy installed with a HelmRelease", func() {
 		It("should get the team annotation", func() {
 			updateMappingConfigMap(ctx, func(data map[string]string) map[string]string {
 				data["app-d"] = "shield"
@@ -50,7 +50,7 @@ var _ = Describe("Integration Tests", func() {
 		})
 	})
 
-	Context("When team mapping changes for app alraedy installed with HelmRelease", func() {
+	Context("When team mapping changes for an app which is alraedy installed with a HelmRelease", func() {
 		It("should get the new team annotation", func() {
 			updateMappingConfigMap(ctx, func(data map[string]string) map[string]string {
 				data["app-a"] = "tenet"
@@ -60,9 +60,17 @@ var _ = Describe("Integration Tests", func() {
 			validateHelmRelease(ctx, "test-app-a", "default", "tenet")
 		})
 	})
+
+	Context("When team mapping is available for an app but it gets installed with a HelmRelease providing team information", func() {
+		It("should not not get team from the mapping", func() {
+			createOCIRepository(ctx, "app-b", "test-app-b", "default")
+			createHelmRelease(ctx, "test-app-b", "default", "phoenix")
+			validateHelmRelease(ctx, "test-app-b", "default", "phoenix")
+		})
+	})
 })
 
-func createHelmRelease(ctx context.Context, name, namespace string) {
+func createHelmRelease(ctx context.Context, name, namespace, team string) {
 	By("Creating HelmRelease")
 
 	helmRel := &helmv2.HelmRelease{
@@ -77,6 +85,12 @@ func createHelmRelease(ctx context.Context, name, namespace string) {
 				Namespace: namespace,
 			},
 		},
+	}
+
+	if team != "" {
+		helmRel.Annotations = map[string]string{
+			gsannotation.AppTeam: team,
+		}
 	}
 
 	Expect(k8sClient.Create(ctx, helmRel)).Should(Succeed())

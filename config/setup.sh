@@ -16,10 +16,18 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+if [[ $CIRCLECI == true ]];
+then
+    ARCHITECT_LATEST=$(echo ${"$(curl -I -s -o /dev/null -w '%header{location}' https://github.com/giantswarm/architect/releases/latest)"##*/})
+    wget "https://github.com/giantswarm/architect/releases/download/${ARCHITECT_LATEST}/architect-${ARCHITECT_LATEST}-linux-amd64.tar.gz"
+    tar -xzvf "architect-${ARCHITECT_LATEST}-linux-amd64.tar.gz" "architect-${ARCHITECT_LATEST}-linux-amd64/architect"
+    mv "architect-${ARCHITECT_LATEST}-linux-amd64/architect" ./architect
+fi
+
 # Taken from Makefile.gen.go.mk
 REGISTRY="gsoci.azurecr.io/giantswarm"
 REPOSITORY=$(go list -m | cut -d '/' -f 3)
-TAG=$(architect project version)
+TAG=$(./architect project version)
 
 # If local development build the image first and
 # then load it into KinD

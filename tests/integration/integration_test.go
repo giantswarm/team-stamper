@@ -39,7 +39,7 @@ var _ = Describe("Integration Tests", func() {
 		})
 	})
 
-	Context("When team mapping become available for an app which is alraedy installed with a HelmRelease", func() {
+	Context("When team mapping become available for an app which is already installed with a HelmRelease", func() {
 		It("should get the team annotation", func() {
 			updateMappingConfigMap(ctx, func(data map[string]string) map[string]string {
 				data["app-d"] = "shield"

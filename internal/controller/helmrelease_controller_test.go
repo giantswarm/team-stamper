@@ -87,6 +87,33 @@ var _ = Describe("HelmRelease Controller", func() {
 		})
 	})
 
+	Context("When reconciling a HelmRelease, for app with `-app` suffix, with no annotations and available mapping", func() {
+		It("should successfully add the team annotation", func() {
+			objs := []client.Object{&teamMappingsCm}
+			objs = append(objs, appObjects("app-a-app", "org-test")...)
+
+			rc := createReconciler(scheme, objs)
+
+			target := types.NamespacedName{Name: "app-a-app", Namespace: "org-test"}
+
+			req := reconcile.Request{NamespacedName: target}
+
+			_, err := rc.Reconcile(ctx, req)
+
+			Expect(err).ToNot(HaveOccurred())
+
+			hrcr := helmv2.HelmRelease{}
+			err = rc.Get(ctx, target, &hrcr)
+
+			Expect(err).ToNot(HaveOccurred())
+
+			team, ok := hrcr.Annotations[gsannotation.AppTeam]
+
+			Expect(ok).To(BeTrue())
+			Expect(team).To(Equal("team-a"))
+		})
+	})
+
 	Context("When reconciling a HelmRelease with no annotations and unavailable mapping", func() {
 		It("should leave HelmRelease as it is", func() {
 			objs := []client.Object{&teamMappingsCm}

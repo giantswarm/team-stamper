@@ -43,7 +43,8 @@ import (
 const (
 	mappingsCmName      = "apps-to-teams-mapping"
 	mappingsCmNamespace = "default"
-	gsociPrefix         = "oci://gsoci.azurecr.io"
+	gsociPrivatePrefix  = "oci://gsociprivate.azurecr.io"
+	gsociPublicPrefix   = "oci://gsoci.azurecr.io"
 )
 
 // HelmReleaseReconciler reconciles a HelmRelease object
@@ -145,10 +146,13 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 	}
 
-	if !strings.HasPrefix(ociRepo.Spec.URL, gsociPrefix) {
+	supportedRegistry := strings.HasPrefix(ociRepo.Spec.URL, gsociPrivatePrefix) ||
+		strings.HasPrefix(ociRepo.Spec.URL, gsociPublicPrefix)
+
+	if !supportedRegistry {
 		log.Info(fmt.Sprintf(
-			"Cancelling reconciliation, app does not come from %s OCI registry",
-			gsociPrefix,
+			"Cancelling reconciliation, app does not come from one of %+v OCI registries",
+			[]string{gsociPrivatePrefix, gsociPublicPrefix},
 		))
 
 		// cancel reconciliation for the object unless resync kicks in or
@@ -167,6 +171,11 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	appName := ociRepo.Spec.URL[strings.LastIndex(ociRepo.Spec.URL, "/")+1:]
+
+	// Once the https://github.com/giantswarm/giantswarm/issues/35504
+	// gets completed and closed, thi TrimSuffix  will no longer be
+	// needed.
+	appName = strings.TrimSuffix(appName, "-app")
 
 	/*
 		Step 2: get ConfigMap with apps-to-teams mapping

@@ -168,6 +168,8 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	appName := ociRepo.Spec.URL[strings.LastIndex(ociRepo.Spec.URL, "/")+1:]
 
+	appName = strings.TrimSuffix(appName, "-app")
+
 	/*
 		Step 2: get ConfigMap with apps-to-teams mapping
 	*/

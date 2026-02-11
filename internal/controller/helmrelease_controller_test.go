@@ -62,7 +62,8 @@ var _ = Describe("HelmRelease Controller", func() {
 
 	Context("When reconciling a HelmRelease with no annotations and available mapping", func() {
 		It("should successfully add the team annotation", func() {
-			objs := []client.Object{&teamMappingsCm}
+			objs := make([]client.Object, 0, 3)
+			objs = append(objs, &teamMappingsCm)
 			objs = append(objs, appObjects("app-a", "org-test")...)
 
 			rc := createReconciler(scheme, objs)
@@ -89,7 +90,8 @@ var _ = Describe("HelmRelease Controller", func() {
 
 	Context("When reconciling a HelmRelease, for app with `-app` suffix, with no annotations and available mapping", func() {
 		It("should successfully add the team annotation", func() {
-			objs := []client.Object{&teamMappingsCm}
+			objs := make([]client.Object, 0, 3)
+			objs = append(objs, &teamMappingsCm)
 			objs = append(objs, appObjects("app-a-app", "org-test")...)
 
 			rc := createReconciler(scheme, objs)
@@ -116,7 +118,8 @@ var _ = Describe("HelmRelease Controller", func() {
 
 	Context("When reconciling a HelmRelease with no annotations and unavailable mapping", func() {
 		It("should leave HelmRelease as it is", func() {
-			objs := []client.Object{&teamMappingsCm}
+			objs := make([]client.Object, 0, 3)
+			objs = append(objs, &teamMappingsCm)
 			objs = append(objs, appObjects("app-d", "org-test")...)
 
 			rc := createReconciler(scheme, objs)
@@ -142,7 +145,8 @@ var _ = Describe("HelmRelease Controller", func() {
 
 	Context("When running requestsForHelmReleases() for mappings ConfigMap", func() {
 		It("should return list of all HelmRelease CRs", func() {
-			objs := []client.Object{&teamMappingsCm}
+			objs := make([]client.Object, 0, 5)
+			objs = append(objs, &teamMappingsCm)
 			objs = append(objs, appObjects("app-a", "org-test-1")...)
 			objs = append(objs, appObjects("app-b", "org-test-2")...)
 

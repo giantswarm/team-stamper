@@ -119,7 +119,7 @@ func updateMappingConfigMap(ctx context.Context, fn func(map[string]string) map[
 
 	Expect(k8sClient.Get(
 		ctx,
-		types.NamespacedName{Name: "apps-to-teams-mapping", Namespace: "default"},
+		types.NamespacedName{Name: "apps-to-teams-mapping", Namespace: "giantswarm"},
 		&cm,
 	)).Should(Succeed())
 
@@ -135,7 +135,7 @@ func updateMappingConfigMap(ctx context.Context, fn func(map[string]string) map[
 
 		err := k8sClient.Get(
 			ctx,
-			types.NamespacedName{Name: "apps-to-teams-mapping", Namespace: "default"},
+			types.NamespacedName{Name: "apps-to-teams-mapping", Namespace: "giantswarm"},
 			&cm,
 		)
 		if err != nil {

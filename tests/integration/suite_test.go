@@ -62,7 +62,7 @@ var _ = BeforeSuite(func() {
 					"application.giantswarm.io/apps-to-teams-mapping": "true",
 				},
 				Name:      "apps-to-teams-mapping",
-				Namespace: "default",
+				Namespace: "giantswarm",
 			},
 			Data: map[string]string{
 				"app-a": "honeybadger",
@@ -77,7 +77,7 @@ var _ = BeforeSuite(func() {
 
 		err := k8sClient.Get(
 			context.Background(),
-			types.NamespacedName{Name: "apps-to-teams-mapping", Namespace: "default"},
+			types.NamespacedName{Name: "apps-to-teams-mapping", Namespace: "giantswarm"},
 			&cm,
 		)
 		if err != nil {
@@ -100,7 +100,7 @@ var _ = AfterSuite(func() {
 		&v1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "apps-to-teams-mapping",
-				Namespace: "default",
+				Namespace: "giantswarm",
 			},
 		},
 	)).Should(Succeed())

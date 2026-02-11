@@ -238,7 +238,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	// need to create a partial object
 	partObj := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": cr.GroupVersionKind().GroupVersion().String(),
+			"apiVersion": helmv2.GroupVersion.String(),
 			"kind":       helmv2.HelmReleaseKind,
 			"metadata": map[string]interface{}{
 				"annotations": map[string]interface{}{

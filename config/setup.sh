@@ -49,7 +49,7 @@ helm repo add giantswarm https://giantswarm.github.io/giantswarm-catalog
 helm repo update
 helm upgrade --install --wait flux giantswarm/flux-app --set podMonitors.enabled=false
 
-k create namespace giantswarm --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace giantswarm --dry-run=client -o yaml | kubectl apply -f -
 
 # Install Team Stamper
 helm upgrade --install --wait stamper ./helm/team-stamper --set image.tag="$NEWTAG"

@@ -42,7 +42,7 @@ import (
 
 const (
 	mappingsCmName      = "apps-to-teams-mapping"
-	mappingsCmNamespace = "default"
+	mappingsCmNamespace = "giantswarm"
 	gsociPrivatePrefix  = "oci://gsociprivate.azurecr.io"
 	gsociPublicPrefix   = "oci://gsoci.azurecr.io"
 )
@@ -238,7 +238,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	// need to create a partial object
 	partObj := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": helmv2.GroupVersion.String(),
+			"apiVersion": cr.GroupVersionKind().GroupVersion().String(),
 			"kind":       helmv2.HelmReleaseKind,
 			"metadata": map[string]interface{}{
 				"annotations": map[string]interface{}{

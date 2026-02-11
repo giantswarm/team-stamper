@@ -6,14 +6,6 @@ metadata:
   name: {{ .Release.Name }}-manager-role
 rules:
   - apiGroups:
-      - ""
-    resources:
-      - configmaps
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
       - helm.toolkit.fluxcd.io
     resources:
       - helmreleases
@@ -26,6 +18,23 @@ rules:
       - source.toolkit.fluxcd.io
     resources:
       - ocirepositories
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    {{- include "labels.common" . | nindent 4 }}
+  name: {{ .Release.Name }}-manager-role
+  namespace: "giantswarm"
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
     verbs:
       - get
       - list

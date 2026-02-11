@@ -21,3 +21,8 @@ go test -tags=k8srequired -count=1 ./tests/integration -v
 ```
 
 These tests are configured to look for the `/tmp/kind.kubeconfig` file and use it for creating Kubernetes client.
+
+The integration test cleans up after itself, except for deleting KinD cluster and things set up by the `setup.sh`, which hopefully makes sense, for the entire cluster will be deleted by you once development is done.
+
+If, after testing your changes, you put more changes into the controller which you want to test too, for which you need to build a new image, simply run the `./config/setup.sh --local` again. It will take care of rebuilding the image and re-deploying
+the controller into the KinD cluster.

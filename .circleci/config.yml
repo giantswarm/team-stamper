@@ -51,3 +51,13 @@ workflows:
           requires:
             - go-build
             - push-to-app-catalog
+          # we do not push to registries from the 'main', see above,
+          # hence we cannot test from the 'main', in general. That is we
+          # could do it by loading an image we build anyway into KinD,
+          # but since all the work flows through PRs and branches,
+          # the tests are run for them, so it anyway feels redundand
+          # to run them in 'main' too after merging.
+          filters:
+            branches:
+              ignore:
+                - main

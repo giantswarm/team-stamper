@@ -40,6 +40,20 @@ var ConfigMapDataChangedPredicate = predicate.Funcs{
 
 var HelmReleaseNoTeamPredicate = predicate.Funcs{
 	CreateFunc: func(e event.CreateEvent) bool {
+		hr, ok := e.Object.(*helmv2.HelmRelease)
+
+		if !ok {
+			return false
+		}
+
+		if hr.Spec.ChartRef == nil {
+			return false
+		}
+
+		if hr.Spec.ChartRef.Kind != sourcev1beta2.OCIRepositoryKind {
+			return false
+		}
+
 		return true
 	},
 	DeleteFunc: func(e event.DeleteEvent) bool {

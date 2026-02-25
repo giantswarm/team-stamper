@@ -142,7 +142,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				),
 			)
 
-			return ctrl.Result{}, client.IgnoreNotFound(err)
+			return ctrl.Result{}, err
 		}
 	}
 
@@ -227,6 +227,15 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		// this HelmRelease should get scheduled for reconciliation,
 		// hence it does not seem we need to reschedule it here.
 
+		return ctrl.Result{}, nil
+	}
+
+	/*
+		Step 3.5: check team is correct now
+	*/
+
+	assignedTeamNow, _ = cr.Annotations[gsannotation.AppTeam]
+	if assignedTeam == assignedTeamNow {
 		return ctrl.Result{}, nil
 	}
 

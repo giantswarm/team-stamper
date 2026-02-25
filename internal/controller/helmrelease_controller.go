@@ -234,7 +234,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		Step 3.5: check team is correct now
 	*/
 
-	assignedTeamNow, _ = cr.Annotations[gsannotation.AppTeam]
+	assignedTeamNow, _ := cr.Annotations[gsannotation.AppTeam]
 	if assignedTeam == assignedTeamNow {
 		return ctrl.Result{}, nil
 	}

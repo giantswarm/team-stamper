@@ -60,7 +60,7 @@ var HelmReleaseNoTeamPredicate = predicate.Funcs{
 			return false
 		}
 
-		assignedTeam, _ := newHr.Annotations[gsannotation.AppTeam]
+		assignedTeam := newHr.Annotations[gsannotation.AppTeam]
 
 		return assignedTeam == ""
 	},

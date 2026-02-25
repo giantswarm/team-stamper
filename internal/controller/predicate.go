@@ -60,9 +60,9 @@ var HelmReleaseNoTeamPredicate = predicate.Funcs{
 			return false
 		}
 
-		_, ok = newHr.Annotations[gsannotation.AppTeam]
+		assignedTeam := newHr.Annotations[gsannotation.AppTeam]
 
-		return !ok
+		return assignedTeam == ""
 	},
 	GenericFunc: func(e event.GenericEvent) bool {
 		return false

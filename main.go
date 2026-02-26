@@ -81,7 +81,7 @@ func main() {
 		"The interval at which HelmRelease is reevaluated when OCIRepository is missing")
 
 	opts := zap.Options{
-		Development: true,
+		Development: false,
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()

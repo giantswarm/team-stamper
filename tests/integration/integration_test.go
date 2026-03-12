@@ -25,17 +25,19 @@ var _ = Describe("Integration Tests", func() {
 
 	Context("When team mapping is available for an app and this app gets installed with a HelmRelease", func() {
 		It("should get the team annotation", func() {
-			createOCIRepository(ctx, "app-a", "test-app-a", "default")
+			createOCIRepository(ctx, "app-a", "test-app-a", "default", "")
 			createHelmRelease(ctx, "test-app-a", "default", "")
 			validateHelmRelease(ctx, "test-app-a", "default", "honeybadger")
+			validateOCIRepository(ctx, "test-app-a", "default", "honeybadger")
 		})
 	})
 
 	Context("When team mapping is unavailable for an app and this app gets installed with a HelmRelease", func() {
 		It("should not get the team annotation", func() {
-			createOCIRepository(ctx, "app-d", "test-app-d", "default")
+			createOCIRepository(ctx, "app-d", "test-app-d", "default", "")
 			createHelmRelease(ctx, "test-app-d", "default", "")
 			validateHelmRelease(ctx, "test-app-d", "default", "")
+			validateOCIRepository(ctx, "test-app-d", "default", "")
 		})
 	})
 
@@ -47,6 +49,7 @@ var _ = Describe("Integration Tests", func() {
 				return data
 			})
 			validateHelmRelease(ctx, "test-app-d", "default", "shield")
+			validateOCIRepository(ctx, "test-app-d", "default", "shield")
 		})
 	})
 
@@ -58,14 +61,16 @@ var _ = Describe("Integration Tests", func() {
 				return data
 			})
 			validateHelmRelease(ctx, "test-app-a", "default", "tenet")
+			validateOCIRepository(ctx, "test-app-a", "default", "tenet")
 		})
 	})
 
 	Context("When team mapping is available for an app but it gets installed with a HelmRelease providing team information", func() {
 		It("should not not get team from the mapping", func() {
-			createOCIRepository(ctx, "app-b", "test-app-b", "default")
+			createOCIRepository(ctx, "app-b", "test-app-b", "default", "phoenix")
 			createHelmRelease(ctx, "test-app-b", "default", "phoenix")
 			validateHelmRelease(ctx, "test-app-b", "default", "phoenix")
+			validateOCIRepository(ctx, "test-app-b", "default", "phoenix")
 		})
 	})
 })
@@ -96,7 +101,7 @@ func createHelmRelease(ctx context.Context, name, namespace, team string) {
 	Expect(k8sClient.Create(ctx, helmRel)).Should(Succeed())
 }
 
-func createOCIRepository(ctx context.Context, app, name, namespace string) {
+func createOCIRepository(ctx context.Context, app, name, namespace, team string) {
 	By("Creating OCIRepository")
 
 	ociRepo := &sourcev1beta2.OCIRepository{
@@ -107,6 +112,12 @@ func createOCIRepository(ctx context.Context, app, name, namespace string) {
 		Spec: sourcev1beta2.OCIRepositorySpec{
 			URL: "oci://gsoci.azurecr.io/charts/giantswarm/" + app,
 		},
+	}
+
+	if team != "" {
+		ociRepo.Annotations = map[string]string{
+			gsannotation.AppTeam: team,
+		}
 	}
 
 	Expect(k8sClient.Create(ctx, ociRepo)).Should(Succeed())
@@ -162,6 +173,29 @@ func validateHelmRelease(ctx context.Context, name, namespace, expected string) 
 		}
 
 		val, _ := hr.Annotations[gsannotation.AppTeam]
+
+		return val
+	}
+
+	Eventually(isOk, time.Second*1, time.Millisecond*100).Should(Equal(expected))
+
+	// this is not needed when setting annotation, but when it shouldn't
+	// be set it helps making sure HR remains without it
+	Consistently(isOk, time.Second*2, time.Millisecond*500).Should(Equal(expected))
+}
+
+func validateOCIRepository(ctx context.Context, name, namespace, expected string) {
+	By("Validating OCIRepository")
+
+	isOk := func() string {
+		ocir := sourcev1beta2.OCIRepository{}
+
+		err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, &ocir)
+		if err != nil {
+			return err.Error()
+		}
+
+		val, _ := ocir.Annotations[gsannotation.AppTeam]
 
 		return val
 	}

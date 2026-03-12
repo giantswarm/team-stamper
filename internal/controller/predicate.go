@@ -2,6 +2,7 @@ package controller
 
 import (
 	"reflect"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -38,7 +39,7 @@ var ConfigMapDataChangedPredicate = predicate.Funcs{
 	},
 }
 
-var HelmReleaseNoTeamPredicate = predicate.Funcs{
+var HelmReleasePredicate = predicate.Funcs{
 	CreateFunc: func(e event.CreateEvent) bool {
 		hr, ok := e.Object.(*helmv2.HelmRelease)
 
@@ -54,7 +55,17 @@ var HelmReleaseNoTeamPredicate = predicate.Funcs{
 			return false
 		}
 
-		return true
+		assignedTeam := hr.Annotations[gsannotation.AppTeam]
+
+		/*
+			There is a potential here and in UpdateFunc that
+			a HelmRelease gets created with a non-empty team,
+			but not the one assigned through ConfigMap. It does
+			not matter, for controller wouldn't override this
+			information anyone because it is not the owner, hence
+			it is better to filter it out now.
+		*/
+		return assignedTeam == ""
 	},
 	DeleteFunc: func(e event.DeleteEvent) bool {
 		return false
@@ -77,6 +88,43 @@ var HelmReleaseNoTeamPredicate = predicate.Funcs{
 		assignedTeam := newHr.Annotations[gsannotation.AppTeam]
 
 		return assignedTeam == ""
+	},
+	GenericFunc: func(e event.GenericEvent) bool {
+		return false
+	},
+}
+
+var OCIRepositoryPredicate = predicate.Funcs{
+	CreateFunc: func(e event.CreateEvent) bool {
+		ocirepo, ok := e.Object.(*sourcev1beta2.OCIRepository)
+
+		if !ok {
+			return false
+		}
+
+		supportedRegistry := strings.HasPrefix(ocirepo.Spec.URL, gsociPrivatePrefix) ||
+			strings.HasPrefix(ocirepo.Spec.URL, gsociPublicPrefix)
+
+		assignedTeam := ocirepo.Annotations[gsannotation.AppTeam]
+
+		return supportedRegistry && assignedTeam == ""
+	},
+	DeleteFunc: func(e event.DeleteEvent) bool {
+		return false
+	},
+	UpdateFunc: func(e event.UpdateEvent) bool {
+		ocirepo, ok := e.ObjectNew.(*sourcev1beta2.OCIRepository)
+
+		if !ok {
+			return false
+		}
+
+		supportedRegistry := strings.HasPrefix(ocirepo.Spec.URL, gsociPrivatePrefix) ||
+			strings.HasPrefix(ocirepo.Spec.URL, gsociPublicPrefix)
+
+		assignedTeam := ocirepo.Annotations[gsannotation.AppTeam]
+
+		return supportedRegistry && assignedTeam == ""
 	},
 	GenericFunc: func(e event.GenericEvent) bool {
 		return false

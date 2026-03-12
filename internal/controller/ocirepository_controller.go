@@ -237,8 +237,8 @@ func (r *OCIRepositoryReconciler) requestsForOCIRepositories(ctx context.Context
 
 	requests := make([]reconcile.Request, 0, len(ocirepoList.Items))
 	for _, ocirepo := range ocirepoList.Items {
-		if ! strings.HasPrefix(ocirepo.Spec.URL, gsociPrivatePrefix) &&
-		! strings.HasPrefix(ocirepo.Spec.URL, gsociPublicPrefix) {
+		if !strings.HasPrefix(ocirepo.Spec.URL, gsociPrivatePrefix) &&
+				!strings.HasPrefix(ocirepo.Spec.URL, gsociPublicPrefix) {
 			continue
 		}
 

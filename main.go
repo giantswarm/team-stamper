@@ -153,9 +153,9 @@ func main() {
 	// +kubebuilder:scaffold:builder
 
 	if err := (&controller.OCIRepositoryReconciler{
-		Client:              mgr.GetClient(),
-		ControllerName:      controllerName,
-		Scheme:              mgr.GetScheme(),
+		Client:         mgr.GetClient(),
+		ControllerName: controllerName,
+		Scheme:         mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "OCIRepository")
 		os.Exit(1)

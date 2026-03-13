@@ -86,7 +86,7 @@ func (r *OCIRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	appName := cr.Spec.URL[strings.LastIndex(cr.Spec.URL, "/")+1:]
 
 	/*
-		Step 2: get ConfigMap with apps-to-teams mapping
+		Step 1: get ConfigMap with apps-to-teams mapping
 	*/
 
 	mappingCm := &v1.ConfigMap{}
@@ -121,7 +121,7 @@ func (r *OCIRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	/*
-		Step 3: get the team assignment from mapping, if present
+		Step 2: get the team assignment from mapping, if present
 	*/
 
 	assignedTeam, ok := mappingCm.Data[appName]
@@ -133,7 +133,7 @@ func (r *OCIRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	/*
-		Step 3.5: check team is correct now
+		Step 2.5: check team is correct now
 	*/
 
 	if assignedTeam == cr.Annotations[gsannotation.AppTeam] {
@@ -141,7 +141,7 @@ func (r *OCIRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	/*
-		Step 4: patch the OCIRepository CR with the team information
+		Step 3: patch the OCIRepository CR with the team information
 	*/
 
 	// We only want to manage a single field, hence we

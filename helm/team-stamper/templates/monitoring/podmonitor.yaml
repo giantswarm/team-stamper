@@ -14,7 +14,7 @@ spec:
     matchLabels:
       {{- include "labels.selector" . | nindent 6 }}
   podMetricsEndpoints:
-    - port: http
+    - port: metrics
       interval: {{ .Values.metrics.podMonitor.interval }}
       scrapeTimeout: {{ .Values.metrics.podMonitor.scrapeTimeout }}
 {{- end }}

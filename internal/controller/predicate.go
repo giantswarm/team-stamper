@@ -47,39 +47,19 @@ var HelmReleasePredicate = predicate.Funcs{
 			return false
 		}
 
-		if hr.Spec.ChartRef == nil {
-			return false
-		}
-
-		if hr.Spec.ChartRef.Kind != sourcev1beta2.OCIRepositoryKind {
-			return false
-		}
-
-		assignedTeam := hr.Annotations[gsannotation.AppTeam]
-
-		return assignedTeam == ""
+		return helmReleaseEnqueue(hr)
 	},
 	DeleteFunc: func(e event.DeleteEvent) bool {
 		return false
 	},
 	UpdateFunc: func(e event.UpdateEvent) bool {
-		newHr, ok := e.ObjectNew.(*helmv2.HelmRelease)
+		hr, ok := e.ObjectNew.(*helmv2.HelmRelease)
 
 		if !ok {
 			return false
 		}
 
-		if newHr.Spec.ChartRef == nil {
-			return false
-		}
-
-		if newHr.Spec.ChartRef.Kind != sourcev1beta2.OCIRepositoryKind {
-			return false
-		}
-
-		assignedTeam := newHr.Annotations[gsannotation.AppTeam]
-
-		return assignedTeam == ""
+		return helmReleaseEnqueue(hr)
 	},
 	GenericFunc: func(e event.GenericEvent) bool {
 		return false
@@ -94,12 +74,7 @@ var OCIRepositoryPredicate = predicate.Funcs{
 			return false
 		}
 
-		supportedRegistry := strings.HasPrefix(ocirepo.Spec.URL, gsociPrivatePrefix) ||
-			strings.HasPrefix(ocirepo.Spec.URL, gsociPublicPrefix)
-
-		assignedTeam := ocirepo.Annotations[gsannotation.AppTeam]
-
-		return supportedRegistry && assignedTeam == ""
+		return ociRepositoryEnqueue(ocirepo)
 	},
 	DeleteFunc: func(e event.DeleteEvent) bool {
 		return false
@@ -111,14 +86,32 @@ var OCIRepositoryPredicate = predicate.Funcs{
 			return false
 		}
 
-		supportedRegistry := strings.HasPrefix(ocirepo.Spec.URL, gsociPrivatePrefix) ||
-			strings.HasPrefix(ocirepo.Spec.URL, gsociPublicPrefix)
-
-		assignedTeam := ocirepo.Annotations[gsannotation.AppTeam]
-
-		return supportedRegistry && assignedTeam == ""
+		return ociRepositoryEnqueue(ocirepo)
 	},
 	GenericFunc: func(e event.GenericEvent) bool {
 		return false
 	},
+}
+
+func helmReleaseEnqueue(cr *helmv2.HelmRelease) bool {
+	if cr.Spec.ChartRef == nil {
+		return false
+	}
+
+	if cr.Spec.ChartRef.Kind != sourcev1beta2.OCIRepositoryKind {
+		return false
+	}
+
+	assignedTeam := cr.Annotations[gsannotation.AppTeam]
+
+	return assignedTeam == ""
+}
+
+func ociRepositoryEnqueue(cr *sourcev1beta2.OCIRepository) bool {
+	supportedRegistry := strings.HasPrefix(cr.Spec.URL, gsociPrivatePrefix) ||
+		strings.HasPrefix(cr.Spec.URL, gsociPublicPrefix)
+
+	assignedTeam := cr.Annotations[gsannotation.AppTeam]
+
+	return supportedRegistry && assignedTeam == ""
 }

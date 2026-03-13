@@ -222,7 +222,7 @@ func (r *OCIRepositoryReconciler) requestsForOCIRepositories(ctx context.Context
 		return nil
 	}
 	// When enqueuing requests, this happens for both, old and new object,
-	// hence the below log message appearch twice, see:
+	// hence the below log message appear twice, see:
 	// https://github.com/kubernetes-sigs/controller-runtime/blob/v0.23.0/pkg/handler/enqueue_mapped.go#L109-L110
 	// But later events get deduplicated when sending to the workqueue, which has
 	// been added in https://github.com/kubernetes-sigs/controller-runtime/pull/1390.

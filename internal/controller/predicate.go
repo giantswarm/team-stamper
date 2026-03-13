@@ -57,14 +57,6 @@ var HelmReleasePredicate = predicate.Funcs{
 
 		assignedTeam := hr.Annotations[gsannotation.AppTeam]
 
-		/*
-			There is a potential here and in UpdateFunc that
-			a HelmRelease gets created with a non-empty team,
-			but not the one assigned through ConfigMap. It does
-			not matter, for controller wouldn't override this
-			information anyone because it is not the owner, hence
-			it is better to filter it out now.
-		*/
 		return assignedTeam == ""
 	},
 	DeleteFunc: func(e event.DeleteEvent) bool {

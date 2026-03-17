@@ -32,19 +32,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
 	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
 	gsannotation "github.com/giantswarm/k8smetadata/pkg/annotation"
-)
-
-const (
-	mappingsCmName      = "apps-to-teams-mapping"
-	mappingsCmNamespace = "giantswarm"
-	gsociPrivatePrefix  = "oci://gsociprivate.azurecr.io"
-	gsociPublicPrefix   = "oci://gsoci.azurecr.io"
 )
 
 // HelmReleaseReconciler reconciles a HelmRelease object
@@ -56,9 +48,9 @@ type HelmReleaseReconciler struct {
 	RequeueOnMissingOCI time.Duration
 }
 
-// +kubebuilder:rbac:groups=helm.toolkit.fluxcd.io.application.giantswarm.io,resources=helmreleases,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=helm.toolkit.fluxcd.io.application.giantswarm.io,resources=helmreleases/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=helm.toolkit.fluxcd.io.application.giantswarm.io,resources=helmreleases/finalizers,verbs=update
+// +kubebuilder:rbac:groups=helm.toolkit.fluxcd.io,resources=helmreleases,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=helm.toolkit.fluxcd.io,resources=helmreleases/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=helm.toolkit.fluxcd.io,resources=helmreleases/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -158,24 +150,11 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		// cancel reconciliation for the object unless resync kicks in or
 		// object changes, there is no point it checking it sooner for
 		// app that does not come from GS registry.
-		//
-		// TODO: check if we could create a predicate for filtering out
-		//       unwanted objects, so the reconciliation for them does
-		//       not even starts Probably it is hard or impossible due
-		//       to necessity of checking up the OCIRepository CR, but
-		//       still worth checking. But also, maybe doing that does
-		//       not make sense, for it feels like moving this validation
-		//       logic to another place, but running it anyway.
 
 		return ctrl.Result{}, nil
 	}
 
 	appName := ociRepo.Spec.URL[strings.LastIndex(ociRepo.Spec.URL, "/")+1:]
-
-	// Once the https://github.com/giantswarm/giantswarm/issues/35504
-	// gets completed and closed, thi TrimSuffix  will no longer be
-	// needed.
-	appName = strings.TrimSuffix(appName, "-app")
 
 	/*
 		Step 2: get ConfigMap with apps-to-teams mapping
@@ -281,8 +260,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 func (r *HelmReleaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&helmv2.HelmRelease{}, builder.WithPredicates(
-			predicate.GenerationChangedPredicate{},
-			HelmReleaseNoTeamPredicate,
+			HelmReleasePredicate,
 		)).
 		Watches(
 			&v1.ConfigMap{},
@@ -313,7 +291,7 @@ func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj
 		return nil
 	}
 	// When enqueuing requests, this happens for both, old and new object,
-	// hence the below log message appearch twice, see:
+	// hence the below log message appear twice, see:
 	// https://github.com/kubernetes-sigs/controller-runtime/blob/v0.23.0/pkg/handler/enqueue_mapped.go#L109-L110
 	// But later events get deduplicated when sending to the workqueue, which has
 	// been added in https://github.com/kubernetes-sigs/controller-runtime/pull/1390.

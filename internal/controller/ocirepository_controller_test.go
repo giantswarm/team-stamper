@@ -36,7 +36,7 @@ import (
 	gsannotation "github.com/giantswarm/k8smetadata/pkg/annotation"
 )
 
-var _ = Describe("HelmRelease Controller", func() {
+var _ = Describe("OCIRepository Controller", func() {
 	ctx := context.Background()
 
 	logger := zap.New()
@@ -45,15 +45,15 @@ var _ = Describe("HelmRelease Controller", func() {
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(v1.SchemeGroupVersion, &v1.ConfigMap{})
 	scheme.AddKnownTypes(helmv2.GroupVersion, &helmv2.HelmRelease{}, &helmv2.HelmReleaseList{})
-	scheme.AddKnownTypes(sourcev1beta2.GroupVersion, &sourcev1beta2.OCIRepository{})
+	scheme.AddKnownTypes(sourcev1beta2.GroupVersion, &sourcev1beta2.OCIRepository{}, &sourcev1beta2.OCIRepositoryList{})
 
-	Context("When reconciling a HelmRelease with no annotations and available mapping", func() {
+	Context("When reconciling an OCIRepository with no annotations and available mapping", func() {
 		It("should successfully add the team annotation", func() {
 			objs := make([]client.Object, 0, 3)
 			objs = append(objs, &teamMappingsCm)
 			objs = append(objs, appObjects("app-a", "org-test")...)
 
-			rc := createHelmReleaseReconciler(scheme, objs)
+			rc := createOCIRepositoryReconciler(scheme, objs, true)
 
 			target := types.NamespacedName{Name: "app-a", Namespace: "org-test"}
 
@@ -63,25 +63,25 @@ var _ = Describe("HelmRelease Controller", func() {
 
 			Expect(err).ToNot(HaveOccurred())
 
-			hrcr := helmv2.HelmRelease{}
-			err = rc.Get(ctx, target, &hrcr)
+			ocirepo := sourcev1beta2.OCIRepository{}
+			err = rc.Get(ctx, target, &ocirepo)
 
 			Expect(err).ToNot(HaveOccurred())
 
-			team, ok := hrcr.Annotations[gsannotation.AppTeam]
+			team, ok := ocirepo.Annotations[gsannotation.AppTeam]
 
 			Expect(ok).To(BeTrue())
 			Expect(team).To(Equal("team-a"))
 		})
 	})
 
-	Context("When reconciling a HelmRelease with no annotations and unavailable mapping", func() {
-		It("should leave HelmRelease as it is", func() {
+	Context("When reconciling an OCIRepository with no annotations and unavailable mapping", func() {
+		It("should leave OCIRepository as it is", func() {
 			objs := make([]client.Object, 0, 3)
 			objs = append(objs, &teamMappingsCm)
 			objs = append(objs, appObjects("app-d", "org-test")...)
 
-			rc := createHelmReleaseReconciler(scheme, objs)
+			rc := createOCIRepositoryReconciler(scheme, objs, false)
 
 			target := types.NamespacedName{Name: "app-d", Namespace: "org-test"}
 
@@ -91,27 +91,27 @@ var _ = Describe("HelmRelease Controller", func() {
 
 			Expect(err).ToNot(HaveOccurred())
 
-			hrcr := helmv2.HelmRelease{}
-			err = rc.Get(ctx, target, &hrcr)
+			ocirepo := sourcev1beta2.OCIRepository{}
+			err = rc.Get(ctx, target, &ocirepo)
 
 			Expect(err).ToNot(HaveOccurred())
 
-			_, ok := hrcr.Annotations[gsannotation.AppTeam]
+			_, ok := ocirepo.Annotations[gsannotation.AppTeam]
 
 			Expect(ok).To(BeFalse())
 		})
 	})
 
-	Context("When running requestsForHelmReleases() for mappings ConfigMap", func() {
-		It("should return list of all HelmRelease CRs", func() {
+	Context("When running requestsForOCIRepositories() for mappings ConfigMap", func() {
+		It("should return list of all OCIRepository CRs", func() {
 			objs := make([]client.Object, 0, 5)
 			objs = append(objs, &teamMappingsCm)
 			objs = append(objs, appObjects("app-a", "org-test-1")...)
 			objs = append(objs, appObjects("app-b", "org-test-2")...)
 
-			rc := createHelmReleaseReconciler(scheme, objs)
+			rc := createOCIRepositoryReconciler(scheme, objs, false)
 
-			reqList := rc.requestsForHelmReleases(ctx, &teamMappingsCm)
+			reqList := rc.requestsForOCIRepositories(ctx, &teamMappingsCm)
 
 			Expect(reqList).To(HaveLen(2))
 			Expect(reqList[0]).To(Equal(reconcile.Request{
@@ -130,14 +130,15 @@ var _ = Describe("HelmRelease Controller", func() {
 	})
 })
 
-func createHelmReleaseReconciler(scheme *runtime.Scheme, objs []client.Object) HelmReleaseReconciler {
-	return HelmReleaseReconciler{
+func createOCIRepositoryReconciler(scheme *runtime.Scheme, objs []client.Object, forceOwnership bool) OCIRepositoryReconciler {
+	return OCIRepositoryReconciler{
 		Client: fake.NewClientBuilder().
 			WithScheme(scheme).
 			WithObjects(objs...).
 			Build(),
 
 		ControllerName: "team-stamper",
+		ForceOwnership: forceOwnership,
 		Scheme:         scheme,
 	}
 }

@@ -47,7 +47,7 @@ fi
 # Install latest Flux app
 helm repo add giantswarm https://giantswarm.github.io/giantswarm-catalog
 helm repo update
-helm upgrade --install --wait flux giantswarm/flux-app --set podMonitors.enabled=false
+helm upgrade --install --wait flux giantswarm/flux-app --set podMonitors.enabled=false --set kubeStateMetrics.enabled=false
 
 kubectl create namespace giantswarm --dry-run=client -o yaml | kubectl apply -f -
 

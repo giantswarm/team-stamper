@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
@@ -191,6 +192,7 @@ func (r *OCIRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 func (r *OCIRepositoryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&sourcev1beta2.OCIRepository{}, builder.WithPredicates(
+			predicate.GenerationChangedPredicate{},
 			OCIRepositoryPredicate,
 		)).
 		Watches(

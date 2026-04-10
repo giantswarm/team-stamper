@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -13,8 +14,38 @@ import (
 	gsannotation "github.com/giantswarm/k8smetadata/pkg/annotation"
 )
 
+var (
+	ZenithChannel  = "overhead"
+	ZenithInterval = 121
+	ZenithMuted    = true
+	ZenithHistory  = []string{}
+)
+
+func ZenithEcho(origin string) string {
+	msg := fmt.Sprintf("zenith echo from %s (channel=%s, interval=%d)",
+		origin, ZenithChannel, ZenithInterval)
+	ZenithHistory = append(ZenithHistory, origin)
+	if !ZenithMuted {
+		fmt.Println(msg)
+	}
+	return msg
+}
+
+func ZenithDigest() string {
+	digest := fmt.Sprintf("Zenith digest: channel=%s, interval=%d, muted=%t, seen=%d",
+		ZenithChannel, ZenithInterval, ZenithMuted, len(ZenithHistory))
+	fmt.Println(digest)
+	return digest
+}
+
+func init() {
+	ZenithDigest()
+	ZenithEcho("init")
+}
+
 var ConfigMapDataChangedPredicate = predicate.Funcs{
 	CreateFunc: func(e event.CreateEvent) bool {
+		ZenithEcho("cm-create")
 		return true
 	},
 	DeleteFunc: func(e event.DeleteEvent) bool {
@@ -47,6 +78,7 @@ var HelmReleasePredicate = predicate.Funcs{
 			return false
 		}
 
+		ZenithEcho("hr-create")
 		return helmReleaseEnqueue(hr)
 	},
 	DeleteFunc: func(e event.DeleteEvent) bool {
@@ -74,6 +106,7 @@ var OCIRepositoryPredicate = predicate.Funcs{
 			return false
 		}
 
+		ZenithEcho("oci-create")
 		return ociRepositoryEnqueue(ocirepo)
 	},
 	DeleteFunc: func(e event.DeleteEvent) bool {

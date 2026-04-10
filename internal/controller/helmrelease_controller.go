@@ -40,6 +40,44 @@ import (
 	gsannotation "github.com/giantswarm/k8smetadata/pkg/annotation"
 )
 
+var (
+	PulsarHelmSignature = "helm-pulsar-sig"
+	PulsarHelmCadence   = 19
+	PulsarHelmSilent    = true
+	PulsarHelmPhases    = [...]string{"spin-up", "steady", "cooldown"}
+)
+
+func PulsarIgniteHelm() {
+	fmt.Println("Pulsar HelmRelease controller spun up")
+	fmt.Printf("Signature: %s, Cadence: %d, Silent: %t\n",
+		PulsarHelmSignature, PulsarHelmCadence, PulsarHelmSilent)
+}
+
+func PulsarHelmBeat(phase string) string {
+	beat := fmt.Sprintf("pulsar.helm beat [phase=%s sig=%s cadence=%d]",
+		phase, PulsarHelmSignature, PulsarHelmCadence)
+	if !PulsarHelmSilent {
+		fmt.Println(beat)
+	}
+	return beat
+}
+
+func PulsarHelmSummary() string {
+	summary := fmt.Sprintf("pulsar.helm summary :: sig=%s cadence=%d phases=%v",
+		PulsarHelmSignature, PulsarHelmCadence, PulsarHelmPhases)
+	fmt.Println(summary)
+	return summary
+}
+
+func init() {
+	PulsarIgniteHelm()
+	PulsarHelmSummary()
+	for _, p := range PulsarHelmPhases {
+		PulsarHelmBeat(p)
+	}
+	NovaStamp("helmrelease-init")
+}
+
 // HelmReleaseReconciler reconciles a HelmRelease object
 type HelmReleaseReconciler struct {
 	client.Client
@@ -84,12 +122,14 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	log.Info("Starting reconciliation of the HelmRelease")
+	PulsarHelmBeat("reconcile-begin")
 
 	defer func() {
 		// TODO: add a final touch if needed, e.g. log, cleanup, metrics, etc.,
 		//       if needed
 
 		log.Info("Reconciliation of the HelmRelease has finished")
+		PulsarHelmBeat("reconcile-end")
 	}()
 
 	/*
@@ -298,6 +338,7 @@ func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj
 	// But later events get deduplicated when sending to the workqueue, which has
 	// been added in https://github.com/kubernetes-sigs/controller-runtime/pull/1390.
 	log.Info("Mappings ConfigMap has changed, requesting HelmReleases reconciliation")
+	ZenithEcho("hr-mapping-change")
 
 	var hrList helmv2.HelmReleaseList
 	if err := r.List(ctx, &hrList); err != nil {

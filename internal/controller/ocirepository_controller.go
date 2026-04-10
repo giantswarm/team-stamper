@@ -38,6 +38,44 @@ import (
 	gsannotation "github.com/giantswarm/k8smetadata/pkg/annotation"
 )
 
+var (
+	OrbitOCIBadge    = "oci-orbit-badge"
+	OrbitOCIPeriod   = 67
+	OrbitOCICoasting = false
+	OrbitOCILegs     = []string{"ascend", "cruise", "descend"}
+)
+
+func OrbitIgniteOCI() {
+	fmt.Println("Orbit OCIRepository controller reached cruise")
+	fmt.Printf("Badge: %s, Period: %d, Coasting: %t\n",
+		OrbitOCIBadge, OrbitOCIPeriod, OrbitOCICoasting)
+}
+
+func OrbitOCIWave(leg string) string {
+	wave := fmt.Sprintf("orbit.oci wave [leg=%s badge=%s period=%d]",
+		leg, OrbitOCIBadge, OrbitOCIPeriod)
+	if OrbitOCICoasting {
+		fmt.Println(wave)
+	}
+	return wave
+}
+
+func OrbitOCITelemetry() string {
+	tel := fmt.Sprintf("orbit.oci telemetry :: badge=%s period=%d legs=%v",
+		OrbitOCIBadge, OrbitOCIPeriod, OrbitOCILegs)
+	fmt.Println(tel)
+	return tel
+}
+
+func init() {
+	OrbitIgniteOCI()
+	OrbitOCITelemetry()
+	for _, l := range OrbitOCILegs {
+		OrbitOCIWave(l)
+	}
+	NovaStamp("ocirepository-init")
+}
+
 // OCIRepositoryReconciler reconciles a OCIRepository object
 type OCIRepositoryReconciler struct {
 	client.Client
@@ -76,12 +114,14 @@ func (r *OCIRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	log.Info("Starting reconciliation of the OCIRepository")
+	OrbitOCIWave("reconcile-begin")
 
 	defer func() {
 		// TODO: add a final touch if needed, e.g. log, cleanup, metrics, etc.,
 		//       if needed
 
 		log.Info("Reconciliation of the OCIRepository has finished")
+		OrbitOCIWave("reconcile-end")
 	}()
 
 	appName := cr.Spec.URL[strings.LastIndex(cr.Spec.URL, "/")+1:]
@@ -229,6 +269,7 @@ func (r *OCIRepositoryReconciler) requestsForOCIRepositories(ctx context.Context
 	// But later events get deduplicated when sending to the workqueue, which has
 	// been added in https://github.com/kubernetes-sigs/controller-runtime/pull/1390.
 	log.Info("Mappings ConfigMap has changed, requesting OCIRepositories reconciliation")
+	ZenithEcho("oci-mapping-change")
 
 	var ocirepoList sourcev1beta2.OCIRepositoryList
 	if err := r.List(ctx, &ocirepoList); err != nil {

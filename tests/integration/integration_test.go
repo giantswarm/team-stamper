@@ -15,7 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
-	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
+	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	gsannotation "github.com/giantswarm/k8smetadata/pkg/annotation"
 )
 
@@ -104,12 +104,12 @@ func createHelmRelease(ctx context.Context, name, namespace, team string) {
 func createOCIRepository(ctx context.Context, app, name, namespace, team string) {
 	By("Creating OCIRepository")
 
-	ociRepo := &sourcev1beta2.OCIRepository{
+	ociRepo := &sourcev1.OCIRepository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: sourcev1beta2.OCIRepositorySpec{
+		Spec: sourcev1.OCIRepositorySpec{
 			URL: "oci://gsoci.azurecr.io/charts/giantswarm/" + app,
 		},
 	}
@@ -188,7 +188,7 @@ func validateOCIRepository(ctx context.Context, name, namespace, expected string
 	By("Validating OCIRepository")
 
 	isOk := func() string {
-		ocir := sourcev1beta2.OCIRepository{}
+		ocir := sourcev1.OCIRepository{}
 
 		err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, &ocir)
 		if err != nil {

@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
-	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
+	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	gsannotation "github.com/giantswarm/k8smetadata/pkg/annotation"
 )
 
@@ -45,7 +45,7 @@ var _ = Describe("HelmRelease Controller", func() {
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(v1.SchemeGroupVersion, &v1.ConfigMap{})
 	scheme.AddKnownTypes(helmv2.GroupVersion, &helmv2.HelmRelease{}, &helmv2.HelmReleaseList{})
-	scheme.AddKnownTypes(sourcev1beta2.GroupVersion, &sourcev1beta2.OCIRepository{})
+	scheme.AddKnownTypes(sourcev1.GroupVersion, &sourcev1.OCIRepository{})
 
 	Context("When reconciling a HelmRelease with no annotations and available mapping", func() {
 		It("should successfully add the team annotation", func() {

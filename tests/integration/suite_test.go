@@ -21,7 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
-	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
+	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 )
 
 const (
@@ -49,7 +49,7 @@ var _ = BeforeSuite(func() {
 
 	Expect(clientgoscheme.AddToScheme(scheme)).Should(Succeed())
 	Expect(helmv2.AddToScheme(scheme)).Should(Succeed())
-	Expect(sourcev1beta2.AddToScheme(scheme)).Should(Succeed())
+	Expect(sourcev1.AddToScheme(scheme)).Should(Succeed())
 
 	k8sClient, err = client.New(config, client.Options{Scheme: scheme})
 	Expect(err).ToNot(HaveOccurred())
@@ -118,7 +118,7 @@ var _ = AfterSuite(func() {
 
 		Expect(k8sClient.Delete(
 			context.Background(),
-			&sourcev1beta2.OCIRepository{
+			&sourcev1.OCIRepository{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-app-" + suffix,
 					Namespace: "default",

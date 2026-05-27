@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
+	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	gsannotation "github.com/giantswarm/k8smetadata/pkg/annotation"
 )
 
@@ -60,7 +60,7 @@ func (r *OCIRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	log := logf.FromContext(ctx)
 
 	// Get resource under reconciliation
-	cr := &sourcev1beta2.OCIRepository{}
+	cr := &sourcev1.OCIRepository{}
 	if err := r.Get(ctx, req.NamespacedName, cr); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -149,8 +149,8 @@ func (r *OCIRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// need to create a partial object
 	partObj := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": sourcev1beta2.GroupVersion.String(),
-			"kind":       sourcev1beta2.OCIRepositoryKind,
+			"apiVersion": sourcev1.GroupVersion.String(),
+			"kind":       sourcev1.OCIRepositoryKind,
 			"metadata": map[string]interface{}{
 				"annotations": map[string]interface{}{
 					gsannotation.AppTeam: assignedTeam,
@@ -191,7 +191,7 @@ func (r *OCIRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 // SetupWithManager sets up the controller with the Manager.
 func (r *OCIRepositoryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&sourcev1beta2.OCIRepository{}, builder.WithPredicates(
+		For(&sourcev1.OCIRepository{}, builder.WithPredicates(
 			predicate.GenerationChangedPredicate{},
 			OCIRepositoryPredicate,
 		)).
@@ -230,7 +230,7 @@ func (r *OCIRepositoryReconciler) requestsForOCIRepositories(ctx context.Context
 	// been added in https://github.com/kubernetes-sigs/controller-runtime/pull/1390.
 	log.Info("Mappings ConfigMap has changed, requesting OCIRepositories reconciliation")
 
-	var ocirepoList sourcev1beta2.OCIRepositoryList
+	var ocirepoList sourcev1.OCIRepositoryList
 	if err := r.List(ctx, &ocirepoList); err != nil {
 		log.Error(err, "Error listing OCIRepositories")
 

@@ -58,6 +58,7 @@ workflows:
 
       - architect/integration-test:
           context: architect
+          kubernetes-version: v1.35.1
           name: e2e-tests
           setup-script: config/setup.sh
           test-dir: tests/integration

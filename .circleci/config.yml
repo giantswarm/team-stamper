@@ -36,8 +36,8 @@ workflows:
             filters:
               tags:
                 only: /^v.*/
-              #branches:
-                #ignore: /^.*$/
+              branches:
+                ignore: /^.*$/
 
       - architect/push-to-app-catalog:
           context: architect

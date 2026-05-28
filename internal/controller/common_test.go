@@ -6,7 +6,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
-	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
+	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 )
 
 var teamMappingsCm = v1.ConfigMap{
@@ -36,12 +36,12 @@ func appObjects(app, org string) []client.Object {
 				},
 			},
 		},
-		&sourcev1beta2.OCIRepository{
+		&sourcev1.OCIRepository{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      app,
 				Namespace: org,
 			},
-			Spec: sourcev1beta2.OCIRepositorySpec{
+			Spec: sourcev1.OCIRepositorySpec{
 				URL: "oci://gsoci.azurecr.io/charts/giantswarm/" + app,
 			},
 		},

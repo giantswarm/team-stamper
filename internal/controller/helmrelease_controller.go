@@ -36,7 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
-	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
+	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	gsannotation "github.com/giantswarm/k8smetadata/pkg/annotation"
 )
 
@@ -108,7 +108,7 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	// Get referenced OCIRepository CR
-	ociRepo := &sourcev1beta2.OCIRepository{}
+	ociRepo := &sourcev1.OCIRepository{}
 	if err := r.Get(ctx, ociRepoName, ociRepo); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info(
@@ -312,7 +312,7 @@ func (r *HelmReleaseReconciler) requestsForHelmReleases(ctx context.Context, obj
 			continue
 		}
 
-		if hr.Spec.ChartRef.Kind != sourcev1beta2.OCIRepositoryKind {
+		if hr.Spec.ChartRef.Kind != sourcev1.OCIRepositoryKind {
 			continue
 		}
 

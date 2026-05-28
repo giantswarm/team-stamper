@@ -9,7 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
-	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
+	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	gsannotation "github.com/giantswarm/k8smetadata/pkg/annotation"
 )
 
@@ -68,7 +68,7 @@ var HelmReleasePredicate = predicate.Funcs{
 
 var OCIRepositoryPredicate = predicate.Funcs{
 	CreateFunc: func(e event.CreateEvent) bool {
-		ocirepo, ok := e.Object.(*sourcev1beta2.OCIRepository)
+		ocirepo, ok := e.Object.(*sourcev1.OCIRepository)
 
 		if !ok {
 			return false
@@ -80,7 +80,7 @@ var OCIRepositoryPredicate = predicate.Funcs{
 		return false
 	},
 	UpdateFunc: func(e event.UpdateEvent) bool {
-		ocirepo, ok := e.ObjectNew.(*sourcev1beta2.OCIRepository)
+		ocirepo, ok := e.ObjectNew.(*sourcev1.OCIRepository)
 
 		if !ok {
 			return false
@@ -98,7 +98,7 @@ func helmReleaseEnqueue(cr *helmv2.HelmRelease) bool {
 		return false
 	}
 
-	if cr.Spec.ChartRef.Kind != sourcev1beta2.OCIRepositoryKind {
+	if cr.Spec.ChartRef.Kind != sourcev1.OCIRepositoryKind {
 		return false
 	}
 
@@ -107,7 +107,7 @@ func helmReleaseEnqueue(cr *helmv2.HelmRelease) bool {
 	return assignedTeam == ""
 }
 
-func ociRepositoryEnqueue(cr *sourcev1beta2.OCIRepository) bool {
+func ociRepositoryEnqueue(cr *sourcev1.OCIRepository) bool {
 	supportedRegistry := strings.HasPrefix(cr.Spec.URL, gsociPrivatePrefix) ||
 		strings.HasPrefix(cr.Spec.URL, gsociPublicPrefix)
 

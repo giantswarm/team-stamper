@@ -20,9 +20,9 @@ if [[ $CIRCLECI == true ]];
 then
     ARCHITECT_LATEST="$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/giantswarm/architect/releases/latest)"
     ARCHITECT_LATEST="${ARCHITECT_LATEST##*/}"
-    wget "https://github.com/giantswarm/architect/releases/download/${ARCHITECT_LATEST}/architect-${ARCHITECT_LATEST}-linux-amd64"
-    chmod a+x "architect-${ARCHITECT_LATEST}-linux-amd64"
-    mv "architect-${ARCHITECT_LATEST}-linux-amd64" ./architect
+    wget "https://github.com/giantswarm/architect/releases/download/${ARCHITECT_LATEST}/architect-linux-amd64"
+    chmod a+x "architect-linux-amd64"
+    mv "architect-linux-amd64" ./architect
     TAG=$(./architect project version)
     NEWTAG=$TAG
 else

@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Download the `architect` binary from its current release asset in `config/setup.sh`, fixing
+  `e2e-tests`. The script resolves `architect`'s latest release and then fetched
+  `architect-${VERSION}-linux-amd64.tar.gz`. architect now attaches bare binaries instead: v8.2.x
+  published both, and v8.3.0 (2026-07-14) dropped the tarball, so the download has returned 404 ever
+  since `latest` became v8.3.0. With no `./architect`, `architect project version` produced an empty
+  `TAG`, and the only symptom was `Error: context deadline exceeded` from the `helm --wait` at the end
+  of the script, because the image reference had no tag. Also fail fast on an empty tag so the next
+  asset rename reports itself instead of surfacing as a helm timeout.
+
 ## [0.1.2] - 2026-05-29
 
 ### Changed

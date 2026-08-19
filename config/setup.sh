@@ -20,15 +20,29 @@ if [[ $CIRCLECI == true ]];
 then
     ARCHITECT_LATEST="$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/giantswarm/architect/releases/latest)"
     ARCHITECT_LATEST="${ARCHITECT_LATEST##*/}"
-    wget "https://github.com/giantswarm/architect/releases/download/${ARCHITECT_LATEST}/architect-${ARCHITECT_LATEST}-linux-amd64.tar.gz"
-    tar -xzvf "architect-${ARCHITECT_LATEST}-linux-amd64.tar.gz" "architect-${ARCHITECT_LATEST}-linux-amd64/architect"
-    mv "architect-${ARCHITECT_LATEST}-linux-amd64/architect" ./architect
+    # architect attaches bare binaries rather than per-release tarballs. v8.2.x shipped
+    # both; v8.3.0 dropped the tarball, so once `latest` became v8.3.0 the old
+    # architect-${VERSION}-linux-amd64.tar.gz URL started returning 404.
+    if ! wget -q -O architect "https://github.com/giantswarm/architect/releases/download/${ARCHITECT_LATEST}/architect-linux-amd64"; then
+        echo "failed to download architect ${ARCHITECT_LATEST}" >&2
+        exit 1
+    fi
+    chmod +x architect
     TAG=$(./architect project version)
     NEWTAG=$TAG
 else
     # This is so that user can test not yet commited changes locally
     TAG=$(architect project version)
     NEWTAG=${TAG}-$(date +%s)
+fi
+
+# Fail loudly on an empty tag. When the architect download broke, TAG went empty and
+# the only symptom was an opaque `Error: context deadline exceeded` from the helm
+# --wait at the bottom of this script, because the image reference had no tag.
+if [[ -z $TAG ]];
+then
+    echo "could not determine the image tag" >&2
+    exit 1
 fi
 
 # Taken from Makefile.gen.go.mk

@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  architect: giantswarm/architect@9.5.5
+  architect: giantswarm/architect@dev:c96b4abb94ba86d12b7a1e5aada6e73057183b3e
 
 workflows:
   test:
@@ -45,6 +45,7 @@ workflows:
           name: push-to-app-catalog
           app_catalog: control-plane-catalog
           app_catalog_test: control-plane-test-catalog
+          override_chart_version: false
           chart: team-stamper
           persist_chart_archive: true
           requires:

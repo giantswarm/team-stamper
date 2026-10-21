@@ -5,4 +5,7 @@ const (
 	mappingsCmNamespace = "giantswarm"
 	gsociPrivatePrefix  = "oci://gsociprivate.azurecr.io"
 	gsociPublicPrefix   = "oci://gsoci.azurecr.io"
+
+	metadataName      = "name"
+	metadataNamespace = "namespace"
 )

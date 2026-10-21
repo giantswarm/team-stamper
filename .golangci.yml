@@ -36,6 +36,10 @@ linters:
           - dupl
           - lll
         path: internal/*
+      # golangci-lint 2.15.0 goconst flags repeated literals in table-driven tests.
+      - linters:
+          - goconst
+        path: _test\.go
     paths:
       - third_party$
       - builtin$

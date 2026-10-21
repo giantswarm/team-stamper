@@ -233,8 +233,8 @@ func (r *HelmReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				"annotations": map[string]interface{}{
 					gsannotation.AppTeam: assignedTeam,
 				},
-				"name":      cr.Name,
-				"namespace": cr.Namespace,
+				metadataName:      cr.Name,
+				metadataNamespace: cr.Namespace,
 			},
 		},
 	}

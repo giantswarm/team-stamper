@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix ARM64 images.
 - The `helm.sh/chart` label is valid for long chart versions: the 63-character cut trims the whole trailing run of `-`, `.` and `_`.
 - Download the `architect` binary from its current release asset in `config/setup.sh`, fixing
   `e2e-tests`. The script resolves `architect`'s latest release and then fetched

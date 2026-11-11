@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Add the `io.giantswarm.application.audience` and `io.giantswarm.application.managed` annotations, `home` and `keywords` to `Chart.yaml`, as the chart metadata standard requires.
+
 ## [0.1.3-rc.1] - 2026-11-11
 
 ### Changed

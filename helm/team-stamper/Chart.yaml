@@ -1,10 +1,17 @@
 apiVersion: v2
 name: team-stamper
 description: A Helm chart for Kubernetes Team Stamper operator
+home: https://github.com/giantswarm/team-stamper
+keywords:
+  - ownership
+  - alerting
+  - flux
 icon: https://s.giantswarm.io/app-icons/giantswarm/1/dark.svg
 type: application
 version: 0.1.3-rc.1
 appVersion: "0.1.3-rc.1"
 annotations:
+  io.giantswarm.application.audience: giantswarm
+  io.giantswarm.application.managed: "true"
   io.giantswarm.application.restrictions.cluster-singleton: 'true'
   io.giantswarm.application.team: honeybadger

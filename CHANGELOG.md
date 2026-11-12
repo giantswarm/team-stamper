@@ -9,9 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-12
+
 ### Changed
 
+- This release aggregates all changes from release candidate 0.1.3-rc.1.
 - Add the `io.giantswarm.application.audience` and `io.giantswarm.application.managed` annotations, `home` and `keywords` to `Chart.yaml`, as the chart metadata standard requires.
+- Make pre-commit pass with `golangci-lint` 2.15.0: exclude `goconst` from test files, and name the unstructured `metadata` keys as constants.
+
+### Fixed
+
+- Fix ARM64 images.
+- The `helm.sh/chart` label is valid for long chart versions: the 63-character cut trims the whole trailing run of `-`, `.` and `_`.
+- Download the `architect` binary from its current release asset in `config/setup.sh`, fixing
+  `e2e-tests`. The script resolves `architect`'s latest release and then fetched
+  `architect-${VERSION}-linux-amd64.tar.gz`. architect now attaches bare binaries instead: v8.2.x
+  published both, and v8.3.0 (2026-07-14) dropped the tarball, so the download has returned 404 ever
+  since `latest` became v8.3.0. With no `./architect`, `architect project version` produced an empty
+  `TAG`, and the only symptom was `Error: context deadline exceeded` from the `helm --wait` at the end
+  of the script, because the image reference had no tag. Also fail fast on an empty tag so the next
+  asset rename reports itself instead of surfacing as a helm timeout.
 
 ## [0.1.3-rc.1] - 2026-11-11
 
@@ -52,7 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/giantswarm/team-stamper/compare/v0.1.3-rc.1...HEAD
+[Unreleased]: https://github.com/giantswarm/team-stamper/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/giantswarm/team-stamper/compare/v0.1.3-rc.1...v0.1.3
 [0.1.3-rc.1]: https://github.com/giantswarm/team-stamper/compare/v0.1.2...v0.1.3-rc.1
 [0.1.2]: https://github.com/giantswarm/team-stamper/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/giantswarm/team-stamper/compare/v0.1.0...v0.1.1
